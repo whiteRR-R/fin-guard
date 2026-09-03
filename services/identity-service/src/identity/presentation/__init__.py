@@ -1,0 +1,1 @@
+"""Identity presentation adapters."""

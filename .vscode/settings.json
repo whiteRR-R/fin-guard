@@ -1,0 +1,12 @@
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/services/identity-service/.venv/bin/python",
+    "python.analysis.extraPaths": [
+        "./services/identity-service/src"
+    ],
+    "python.testing.cwd": "${workspaceFolder}/services/identity-service",
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
+}
