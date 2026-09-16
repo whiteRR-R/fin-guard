@@ -6,6 +6,6 @@ from identity.domain.enums.role import EmployeeRole
 
 @dataclass(frozen=True)
 class InviteEmployeeCommand:
-    actor_id: UUID
+    inviter_id: UUID
     employee_email: str
     employee_roles: tuple[EmployeeRole]

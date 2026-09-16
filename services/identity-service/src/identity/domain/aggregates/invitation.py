@@ -154,6 +154,7 @@ class Invitation:
     def is_expired(self, now: datetime) -> bool:
         self._validate_operation_time(now)
         return now >= self._expires_at
+        
 
     def accept(self, now: datetime) -> None:
         if self._status is InvitationStatus.ACCEPTED:

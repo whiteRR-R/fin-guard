@@ -4,6 +4,12 @@ from identity.application.commands.login_employee.command import LoginEmployeeCo
 from identity.application.commands.login_employee.result import LoginEmployeeResult
 from identity.application.exceptions import AuthenticationError
 from identity.application.ports.clock import Clock
+from identity.application.ports.repositories.employee_repository import (
+    EmployeeRepository,
+)
+from identity.application.ports.repositories.refresh_session_repository import (
+    RefreshSessionRepository,
+)
 from identity.application.ports.security.access_token_issuer import AccessTokenIssuer
 from identity.application.ports.security.password_hasher import PasswordHasher
 from identity.application.ports.security.refresh_token_issuer import RefreshTokenIssuer
@@ -20,6 +26,8 @@ class LoginEmployeeHandler:
         self,
         uow: UnitOfWork,
         clock: Clock,
+        employees: EmployeeRepository,
+        refresh_sessions: RefreshSessionRepository,
         password_hasher: PasswordHasher,
         access_token_issuer: AccessTokenIssuer,
         refresh_token_issuer: RefreshTokenIssuer,
@@ -27,6 +35,8 @@ class LoginEmployeeHandler:
     ) -> None:
         self._uow = uow
         self._clock = clock
+        self._employees = employees
+        self._refresh_sessions = refresh_sessions
         self._password_hasher = password_hasher
         self._access_token_issuer = access_token_issuer
         self._refresh_token_issuer = refresh_token_issuer
@@ -38,7 +48,7 @@ class LoginEmployeeHandler:
         now = self._clock.now()
 
         async with self._uow:
-            employee = await self._uow.employees.get_by_email(employee_email)
+            employee = await self._employees.get_by_email(employee_email)
 
             if employee is None:
                 raise AuthenticationError("Invalid credentials")
@@ -76,7 +86,7 @@ class LoginEmployeeHandler:
                 issued_at=now,
             )
 
-            await self._uow.refresh_sessions.add(refresh_session)
+            await self._refresh_sessions.add(refresh_session)
             await self._uow.commit()
 
         return LoginEmployeeResult(

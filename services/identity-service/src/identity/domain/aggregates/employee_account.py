@@ -118,6 +118,7 @@ class EmployeeAccount:
         if not isinstance(password_hash, HashedPassword):
             raise TypeError("password_hash must be HashedPassword")
 
+
         self._password_hash = password_hash
         self._status = EmployeeStatus.ACTIVE
         self._record_event(EmployeeActivated(employee_id=self._employee_id))

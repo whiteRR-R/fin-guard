@@ -4,8 +4,17 @@ from identity.application.exceptions import (
     AuthenticationError,
     EmployeeAlreadyInvitedError,
 )
+from identity.application.messages.invitation_email_requested import (
+    InvitationEmailRequested,
+)
 from identity.application.ports.clock import Clock
-from identity.application.ports.email_sendler import EmailSender
+from identity.application.ports.repositories.employee_repository import (
+    EmployeeRepository,
+)
+from identity.application.ports.repositories.invitation_repository import (
+    InvitationRepository,
+)
+from identity.application.ports.repositories.outbox_repository import OutboxRepository
 from identity.application.ports.security.invitation_token_issuer import (
     InvitationTokenIssuer,
 )
@@ -23,30 +32,34 @@ class InviteEmployeeHandler:
         self,
         uow: UnitOfWork,
         clock: Clock,
+        outbox: OutboxRepository,
+        employees: EmployeeRepository,
+        invitations: InvitationRepository,
         invite_policy: EmployeeInvitePolicy,
-        email_sendler: EmailSender,
         invitation_token_issuer: InvitationTokenIssuer,
     ) -> None:
         self._uow = uow
         self._clock = clock
+        self._outbox = outbox
+        self._employees = employees
+        self._invitations = invitations
         self._invite_policy = invite_policy
-        self._email_sendler = email_sendler
         self._invitation_token_issuer = invitation_token_issuer
 
     async def execute(self, command: InviteEmployeeCommand) -> InviteEmployeeResult:
-        inviter_id = EmployeeId(command.actor_id)
+        inviter_id = EmployeeId(command.inviter_id)
         employee_email = Email(command.employee_email)
         requested_roles = command.employee_roles
 
         async with self._uow:
-            inviter = await self._uow.employees.get_by_id(inviter_id)
+            inviter = await self._employees.get_by_id(inviter_id)
 
             if inviter is None:
                 raise AuthenticationError("Inviter not found")
 
             self._invite_policy.ensure_allowed(inviter)
 
-            existing_employee = await self._uow.employees.get_by_email(employee_email)
+            existing_employee = await self._employees.get_by_email(employee_email)
 
             if existing_employee is not None:
                 raise EmployeeAlreadyInvitedError("Employee already invited")
@@ -66,6 +79,7 @@ class InviteEmployeeHandler:
             employee = EmployeeAccount.invite(
                 employee_id=employee_id, email=employee_email, roles=requested_roles
             )
+            
             invitation = Invitation.issue(
                 invitation_id=invitation_id,
                 invited_by=inviter.id,
@@ -75,16 +89,17 @@ class InviteEmployeeHandler:
                 created_at=now,
                 expires_at=issued_invitation_token.expires_at,
             )
+            
+            email_message = InvitationEmailRequested(
+                invitation_id=invitation_id.value,
+                recipient_email=employee_email.value
+            )
 
-            await self._uow.employees.add(employee)
-            await self._uow.invitations.add(invitation)
+            await self._employees.add(employee)
+            await self._invitations.add(invitation)
+            await self._outbox.add(email_message)
 
             await self._uow.commit()
-
-            await self._email_sendler.send(
-                email=employee.email, 
-                plain_token=issued_invitation_token.plain_token
-            )
 
         return InviteEmployeeResult(
             invitation_id=invitation_id.value,
