@@ -10,7 +10,12 @@ from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus
 from identity.domain.policies.employee_block import EmployeeBlockPolicy
 from identity.domain.value_objects.employee_id import EmployeeId
-from tests.unit.application.doubles import FixedClock, UnitOfWorkFake
+from tests.unit.application.doubles import (
+    EmployeeRepositoryFake,
+    FixedClock,
+    RefreshSessionRepositoryFake,
+    UnitOfWorkFake,
+)
 from tests.unit.application.factories import make_employee, make_refresh_session
 
 NOW = datetime(2026, 9, 11, 12, 0, tzinfo=timezone.utc)
@@ -20,13 +25,16 @@ def test_active_admin_blocks_employee_and_revokes_active_sessions() -> None:
     admin = make_employee("admin@example.com", roles=(EmployeeRole.ADMIN,))
     employee = make_employee("analyst@example.com")
     session = make_refresh_session(employee.id, now=NOW)
-    uow = UnitOfWorkFake(
+    employees = EmployeeRepositoryFake((admin, employee))
+    refresh_sessions = RefreshSessionRepositoryFake(
         active_at=NOW,
-        employees=(admin, employee),
         sessions=(session,),
     )
+    uow = UnitOfWorkFake()
     handler = BlockEmployeeHandler(
         uow=uow,
+        employees=employees,
+        refresh_sessions=refresh_sessions,
         clock=FixedClock(NOW),
         block_policy=EmployeeBlockPolicy(),
     )
@@ -44,8 +52,8 @@ def test_active_admin_blocks_employee_and_revokes_active_sessions() -> None:
     assert result.status == EmployeeStatus.BLOCKED.value
     assert employee.status is EmployeeStatus.BLOCKED
     assert not session.is_active(NOW)
-    assert uow.employees.saved == [employee]
-    assert uow.refresh_sessions.saved == [session]
+    assert employees.saved == [employee]
+    assert refresh_sessions.saved == [session]
     assert uow.commit_count == 1
     assert uow.rollback_count == 0
 
@@ -53,9 +61,13 @@ def test_active_admin_blocks_employee_and_revokes_active_sessions() -> None:
 def test_non_admin_cannot_block_employee() -> None:
     analyst = make_employee("analyst@example.com")
     target = make_employee("target@example.com", roles=(EmployeeRole.AUDITOR,))
-    uow = UnitOfWorkFake(active_at=NOW, employees=(analyst, target))
+    employees = EmployeeRepositoryFake((analyst, target))
+    refresh_sessions = RefreshSessionRepositoryFake(active_at=NOW)
+    uow = UnitOfWorkFake()
     handler = BlockEmployeeHandler(
         uow=uow,
+        employees=employees,
+        refresh_sessions=refresh_sessions,
         clock=FixedClock(NOW),
         block_policy=EmployeeBlockPolicy(),
     )
@@ -71,8 +83,8 @@ def test_non_admin_cannot_block_employee() -> None:
         )
 
     assert target.status is EmployeeStatus.ACTIVE
-    assert uow.employees.saved == []
-    assert uow.refresh_sessions.saved == []
+    assert employees.saved == []
+    assert refresh_sessions.saved == []
     assert uow.commit_count == 0
     assert uow.rollback_count == 1
 
@@ -80,9 +92,13 @@ def test_non_admin_cannot_block_employee() -> None:
 def test_missing_actor_is_rejected_before_target_lookup() -> None:
     target = make_employee("target@example.com")
     missing_actor_id = EmployeeId.new()
-    uow = UnitOfWorkFake(active_at=NOW, employees=(target,))
+    employees = EmployeeRepositoryFake((target,))
+    refresh_sessions = RefreshSessionRepositoryFake(active_at=NOW)
+    uow = UnitOfWorkFake()
     handler = BlockEmployeeHandler(
         uow=uow,
+        employees=employees,
+        refresh_sessions=refresh_sessions,
         clock=FixedClock(NOW),
         block_policy=EmployeeBlockPolicy(),
     )
@@ -97,6 +113,6 @@ def test_missing_actor_is_rejected_before_target_lookup() -> None:
             )
         )
 
-    assert uow.employees.requested_ids == [missing_actor_id]
+    assert employees.requested_ids == [missing_actor_id]
     assert uow.commit_count == 0
     assert uow.rollback_count == 1

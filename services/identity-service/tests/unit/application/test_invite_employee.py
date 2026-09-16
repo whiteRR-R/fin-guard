@@ -9,6 +9,9 @@ from identity.application.exceptions import (
     AuthenticationError,
     EmployeeAlreadyInvitedError,
 )
+from identity.application.messages.invitation_email_requested import (
+    InvitationEmailRequested,
+)
 from identity.application.ports.security.invitation_token_issuer import (
     IssuedInvitationToken,
 )
@@ -19,9 +22,11 @@ from identity.domain.policies.employee_invite import EmployeeInvitePolicy
 from identity.domain.value_objects.employee_id import EmployeeId
 from identity.domain.value_objects.invitation_token_hash import InvitationTokenHash
 from tests.unit.application.doubles import (
-    EmailSenderSpy,
+    EmployeeRepositoryFake,
     FixedClock,
+    InvitationRepositoryFake,
     InvitationTokenIssuerStub,
+    OutboxRepositoryFake,
     UnitOfWorkFake,
 )
 from tests.unit.application.factories import make_employee
@@ -48,24 +53,28 @@ def make_token_issuer() -> InvitationTokenIssuerStub:
     )
 
 
-def test_invite_employee_creates_employee_and_invitation_atomically() -> None:
+def test_invite_employee_saves_aggregates_and_outbox_in_one_unit_of_work() -> None:
     admin = make_employee("admin@example.com", roles=(EmployeeRole.ADMIN,))
-    uow = UnitOfWorkFake(active_at=NOW, employees=(admin,))
+    employees = EmployeeRepositoryFake((admin,))
+    invitations = InvitationRepositoryFake()
+    outbox = OutboxRepositoryFake()
+    uow = UnitOfWorkFake()
     policy = AllowInvitePolicyStub()
     token_issuer = make_token_issuer()
-    email_sender = EmailSenderSpy()
     handler = InviteEmployeeHandler(
         uow=uow,
+        outbox=outbox,
+        employees=employees,
+        invitations=invitations,
         clock=FixedClock(NOW),
         invite_policy=policy,
-        email_sendler=email_sender,
         invitation_token_issuer=token_issuer,
     )
 
     result = asyncio.run(
         handler.execute(
             InviteEmployeeCommand(
-                actor_id=admin.id.value,
+                inviter_id=admin.id.value,
                 employee_email="  ANALYST@example.com  ",
                 employee_roles=(EmployeeRole.RISK_ANALYST,),
             )
@@ -73,15 +82,15 @@ def test_invite_employee_creates_employee_and_invitation_atomically() -> None:
     )
 
     assert policy.checked_employees == [admin]
-    assert len(uow.employees.added) == 1
-    employee = uow.employees.added[0]
+    assert len(employees.added) == 1
+    employee = employees.added[0]
     assert employee.id.value == result.employee_id
     assert employee.email.value == "analyst@example.com"
     assert employee.roles == frozenset({EmployeeRole.RISK_ANALYST})
     assert employee.status is EmployeeStatus.INVITED
 
-    assert len(uow.invitations.added) == 1
-    invitation = uow.invitations.added[0]
+    assert len(invitations.added) == 1
+    invitation = invitations.added[0]
     assert invitation.id.value == result.invitation_id
     assert invitation.invited_by == admin.id
     assert invitation.invited_email == employee.email
@@ -94,9 +103,11 @@ def test_invite_employee_creates_employee_and_invitation_atomically() -> None:
     assert token_issuer.calls == [
         (invitation.id, admin.id, employee.email, NOW)
     ]
-    assert email_sender.sent_messages == [
-        (employee.email, "plain-invitation-token")
-    ]
+    assert len(outbox.added) == 1
+    message = outbox.added[0]
+    assert isinstance(message, InvitationEmailRequested)
+    assert message.invitation_id == invitation.id.value
+    assert message.recipient_email == employee.email.value
     assert uow.commit_count == 1
     assert uow.rollback_count == 0
 
@@ -107,17 +118,18 @@ def test_existing_employee_is_rejected_before_token_is_issued() -> None:
         "analyst@example.com",
         status=EmployeeStatus.INVITED,
     )
-    uow = UnitOfWorkFake(
-        active_at=NOW,
-        employees=(admin, existing_employee),
-    )
+    employees = EmployeeRepositoryFake((admin, existing_employee))
+    invitations = InvitationRepositoryFake()
+    outbox = OutboxRepositoryFake()
+    uow = UnitOfWorkFake()
     token_issuer = make_token_issuer()
-    email_sender = EmailSenderSpy()
     handler = InviteEmployeeHandler(
         uow=uow,
+        outbox=outbox,
+        employees=employees,
+        invitations=invitations,
         clock=FixedClock(NOW),
         invite_policy=AllowInvitePolicyStub(),
-        email_sendler=email_sender,
         invitation_token_issuer=token_issuer,
     )
 
@@ -125,7 +137,7 @@ def test_existing_employee_is_rejected_before_token_is_issued() -> None:
         asyncio.run(
             handler.execute(
                 InviteEmployeeCommand(
-                    actor_id=admin.id.value,
+                    inviter_id=admin.id.value,
                     employee_email="ANALYST@example.com",
                     employee_roles=(EmployeeRole.RISK_ANALYST,),
                 )
@@ -133,24 +145,28 @@ def test_existing_employee_is_rejected_before_token_is_issued() -> None:
         )
 
     assert token_issuer.calls == []
-    assert email_sender.sent_messages == []
-    assert uow.employees.added == []
-    assert uow.invitations.added == []
+    assert outbox.added == []
+    assert employees.added == []
+    assert invitations.added == []
     assert uow.commit_count == 0
     assert uow.rollback_count == 1
 
 
 def test_missing_inviter_is_rejected_before_email_lookup() -> None:
     missing_inviter_id = EmployeeId.new()
-    uow = UnitOfWorkFake(active_at=NOW)
+    employees = EmployeeRepositoryFake()
+    invitations = InvitationRepositoryFake()
+    outbox = OutboxRepositoryFake()
+    uow = UnitOfWorkFake()
     policy = AllowInvitePolicyStub()
     token_issuer = make_token_issuer()
-    email_sender = EmailSenderSpy()
     handler = InviteEmployeeHandler(
         uow=uow,
+        outbox=outbox,
+        employees=employees,
+        invitations=invitations,
         clock=FixedClock(NOW),
         invite_policy=policy,
-        email_sendler=email_sender,
         invitation_token_issuer=token_issuer,
     )
 
@@ -158,7 +174,7 @@ def test_missing_inviter_is_rejected_before_email_lookup() -> None:
         asyncio.run(
             handler.execute(
                 InviteEmployeeCommand(
-                    actor_id=missing_inviter_id.value,
+                    inviter_id=missing_inviter_id.value,
                     employee_email="analyst@example.com",
                     employee_roles=(EmployeeRole.RISK_ANALYST,),
                 )
@@ -166,8 +182,8 @@ def test_missing_inviter_is_rejected_before_email_lookup() -> None:
         )
 
     assert policy.checked_employees == []
-    assert uow.employees.requested_emails == []
+    assert employees.requested_emails == []
     assert token_issuer.calls == []
-    assert email_sender.sent_messages == []
+    assert outbox.added == []
     assert uow.commit_count == 0
     assert uow.rollback_count == 1

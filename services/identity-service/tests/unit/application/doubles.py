@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from datetime import datetime
 from types import TracebackType
 
+from identity.application.messages.base import OutboxMessage
 from identity.application.ports.security.access_token_issuer import (
     IssuedAccessToken,
 )
@@ -10,6 +11,9 @@ from identity.application.ports.security.access_token_verifier import (
 )
 from identity.application.ports.security.invitation_token_issuer import (
     IssuedInvitationToken,
+)
+from identity.application.ports.security.invitation_token_verifier import (
+    InvitationTokenClaims,
 )
 from identity.application.ports.security.refresh_token_issuer import (
     IssuedRefreshToken,
@@ -33,12 +37,12 @@ class FixedClock:
         return self._now
 
 
-class EmailSenderSpy:
+class OutboxRepositoryFake:
     def __init__(self) -> None:
-        self.sent_messages: list[tuple[Email, str]] = []
+        self.added: list[OutboxMessage] = []
 
-    async def send(self, email: Email, plain_token: str) -> None:
-        self.sent_messages.append((email, plain_token))
+    async def add(self, outbox_message: OutboxMessage) -> None:
+        self.added.append(outbox_message)
 
 
 class EmployeeRepositoryFake:
@@ -56,7 +60,11 @@ class EmployeeRepositoryFake:
     async def get_by_email(self, email: Email) -> EmployeeAccount | None:
         self.requested_emails.append(email)
         return next(
-            (employee for employee in self._employees.values() if employee.email == email),
+            (
+                employee
+                for employee in self._employees.values()
+                if employee.email == email
+            ),
             None,
         )
 
@@ -74,11 +82,28 @@ class InvitationRepositoryFake:
         self._invitations = {
             invitation.id: invitation for invitation in invitations
         }
+        self.requested_employee_emails: list[Email] = []
         self.added: list[Invitation] = []
         self.saved: list[Invitation] = []
 
     async def get_by_id(self, invitation_id: InvitationId) -> Invitation | None:
         return self._invitations.get(invitation_id)
+
+    async def get_latest_by_employee_email(
+        self,
+        email: Email,
+    ) -> Invitation | None:
+        self.requested_employee_emails.append(email)
+        matching_invitations = (
+            invitation
+            for invitation in self._invitations.values()
+            if invitation.invited_email == email
+        )
+        return max(
+            matching_invitations,
+            key=lambda invitation: invitation.created_at,
+            default=None,
+        )
 
     async def add(self, invitation: Invitation) -> None:
         self._invitations[invitation.id] = invitation
@@ -131,20 +156,7 @@ class RefreshSessionRepositoryFake:
 
 
 class UnitOfWorkFake:
-    def __init__(
-        self,
-        *,
-        active_at: datetime,
-        employees: Iterable[EmployeeAccount] = (),
-        invitations: Iterable[Invitation] = (),
-        sessions: Iterable[RefreshSession] = (),
-    ) -> None:
-        self.employees = EmployeeRepositoryFake(employees)
-        self.invitations = InvitationRepositoryFake(invitations)
-        self.refresh_sessions = RefreshSessionRepositoryFake(
-            active_at=active_at,
-            sessions=sessions,
-        )
+    def __init__(self) -> None:
         self.commit_count = 0
         self.rollback_count = 0
 
@@ -173,14 +185,20 @@ class PasswordHasherStub:
         *,
         password_is_valid: bool,
         hash_result: HashedPassword | None = None,
+        verify_results: Iterable[bool] | None = None,
     ) -> None:
         self._password_is_valid = password_is_valid
         self._hash_result = hash_result or HashedPassword("new-password-hash")
+        self._verify_results = (
+            None if verify_results is None else iter(verify_results)
+        )
         self.verify_calls: list[tuple[Password, HashedPassword]] = []
         self.hash_calls: list[Password] = []
 
     def verify(self, password: Password, hashed_password: HashedPassword) -> bool:
         self.verify_calls.append((password, hashed_password))
+        if self._verify_results is not None:
+            return next(self._verify_results)
         return self._password_is_valid
 
     def hash(self, password: Password) -> HashedPassword:
@@ -232,6 +250,16 @@ class InvitationTokenIssuerStub:
             (invitation_id, invited_by, employee_email, issued_at)
         )
         return self._result
+
+
+class InvitationTokenVerifierStub:
+    def __init__(self, claims: InvitationTokenClaims) -> None:
+        self._claims = claims
+        self.received_tokens: list[str] = []
+
+    def verify(self, token: str) -> InvitationTokenClaims:
+        self.received_tokens.append(token)
+        return self._claims
 
 
 class AccessTokenVerifierStub:

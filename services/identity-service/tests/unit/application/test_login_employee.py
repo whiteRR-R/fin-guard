@@ -14,8 +14,10 @@ from identity.domain.enums.status import EmployeeStatus
 from identity.domain.value_objects.refresh_session import RefreshTokenHash
 from tests.unit.application.doubles import (
     AccessTokenIssuerStub,
+    EmployeeRepositoryFake,
     FixedClock,
     PasswordHasherStub,
+    RefreshSessionRepositoryFake,
     RefreshTokenIssuerStub,
     UnitOfWorkFake,
 )
@@ -29,6 +31,8 @@ REFRESH_TOKEN_LIFETIME = timedelta(days=30)
 class LoginTestContext:
     handler: LoginEmployeeHandler
     uow: UnitOfWorkFake
+    employees: EmployeeRepositoryFake
+    refresh_sessions: RefreshSessionRepositoryFake
     password_hasher: PasswordHasherStub
     access_token_issuer: AccessTokenIssuerStub
     refresh_token_issuer: RefreshTokenIssuerStub
@@ -39,10 +43,13 @@ def make_context(
     *,
     password_is_valid: bool = True,
 ) -> LoginTestContext:
-    uow = UnitOfWorkFake(
-        active_at=NOW,
-        employees=() if employee is None else (employee,),
+    employees = EmployeeRepositoryFake(
+        () if employee is None else (employee,)
     )
+    refresh_sessions = RefreshSessionRepositoryFake(
+        active_at=NOW,
+    )
+    uow = UnitOfWorkFake()
     password_hasher = PasswordHasherStub(
         password_is_valid=password_is_valid,
     )
@@ -59,6 +66,8 @@ def make_context(
     )
     handler = LoginEmployeeHandler(
         uow=uow,
+        employees=employees,
+        refresh_sessions=refresh_sessions,
         clock=FixedClock(NOW),
         password_hasher=password_hasher,
         access_token_issuer=access_token_issuer,
@@ -68,6 +77,8 @@ def make_context(
     return LoginTestContext(
         handler=handler,
         uow=uow,
+        employees=employees,
+        refresh_sessions=refresh_sessions,
         password_hasher=password_hasher,
         access_token_issuer=access_token_issuer,
         refresh_token_issuer=refresh_token_issuer,
@@ -103,8 +114,8 @@ def test_active_employee_with_valid_password_receives_tokens() -> None:
         "issued-refresh-token-hash"
     )
     assert result.refresh_token_expires_at == NOW + REFRESH_TOKEN_LIFETIME
-    assert len(context.uow.refresh_sessions.added) == 1
-    session = context.uow.refresh_sessions.added[0]
+    assert len(context.refresh_sessions.added) == 1
+    session = context.refresh_sessions.added[0]
     assert session.employee_id == employee.id
     assert session.refresh_token_hash == result.refresh_token.token_hash
     assert session.expires_at == NOW + REFRESH_TOKEN_LIFETIME
@@ -124,7 +135,7 @@ def test_missing_employee_returns_generic_authentication_error() -> None:
     assert context.password_hasher.verify_calls == []
     assert context.access_token_issuer.calls == []
     assert context.refresh_token_issuer.calls == []
-    assert context.uow.refresh_sessions.added == []
+    assert context.refresh_sessions.added == []
     assert context.uow.commit_count == 0
     assert context.uow.rollback_count == 1
 
