@@ -64,8 +64,12 @@ class RefreshSession:
     def expires_at(self) -> datetime:
         return self._expires_at
 
+    @property
+    def revoked_at(self) -> datetime | None:
+        return self._revoked_at
+
     def is_active(self, now: datetime) -> bool:
-        return self._revoked_at is None and now < self._expires_at
+        return self._revoked_at is None and self._created_at <= now < self._expires_at
 
     def revoke(self, now: datetime) -> None:
         if self._revoked_at is None:
