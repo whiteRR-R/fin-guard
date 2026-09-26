@@ -7,7 +7,7 @@ from identity.application.commands.accept_invitation.command import (
     AcceptInvitationCommand,
 )
 from identity.application.commands.accept_invitation.handler import (
-    AcceptInvitionHandler,
+    AcceptInvitationHandler,
 )
 from identity.application.exceptions import (
     EmployeeNotFoundError,
@@ -65,7 +65,7 @@ def make_handler(
     invitation_exists: bool = True,
     employee_exists: bool = True,
 ) -> tuple[
-    AcceptInvitionHandler,
+    AcceptInvitationHandler,
     UnitOfWorkFake,
     EmployeeRepositoryFake,
     InvitationRepositoryFake,
@@ -91,7 +91,7 @@ def make_handler(
         InvitationTokenClaims(invitation_id=invitation.id.value)
     )
     uow = UnitOfWorkFake()
-    handler = AcceptInvitionHandler(
+    handler = AcceptInvitationHandler(
         uow=uow,
         clock=FixedClock(NOW),
         employees=employees,
@@ -109,7 +109,7 @@ def make_handler(
     )
 
 
-def execute_accept(handler: AcceptInvitionHandler) -> None:
+def execute_accept(handler: AcceptInvitationHandler) -> None:
     asyncio.run(
         handler.execute(
             AcceptInvitationCommand(

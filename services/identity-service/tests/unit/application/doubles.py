@@ -135,15 +135,15 @@ class RefreshSessionRepositoryFake:
         self.requested_ids.append(session_id)
         return self._sessions.get(session_id)
 
-    async def list_active_by_user(
+    async def list_active_by_employee(
         self,
-        user_id: EmployeeId,
+        employee_id: EmployeeId,
     ) -> list[RefreshSession]:
-        self.requested_employee_ids.append(user_id)
+        self.requested_employee_ids.append(employee_id)
         return [
             session
             for session in self._sessions.values()
-            if session.employee_id == user_id and session.is_active(self._active_at)
+            if session.employee_id == employee_id and session.is_active(self._active_at)
         ]
 
     async def add(self, refresh_session: RefreshSession) -> None:
@@ -215,12 +215,12 @@ class AccessTokenIssuerStub:
 
     def issue(
         self,
-        user_id: EmployeeId,
+        employee_id: EmployeeId,
         session_id: RefreshSessionId,
         roles: frozenset[EmployeeRole],
         issued_at: datetime,
     ) -> IssuedAccessToken:
-        self.calls.append((user_id, session_id, roles, issued_at))
+        self.calls.append((employee_id, session_id, roles, issued_at))
         return self._result
 
 

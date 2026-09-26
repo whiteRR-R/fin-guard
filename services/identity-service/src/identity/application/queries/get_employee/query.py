@@ -1,0 +1,1 @@
+"""Get employee query definitions."""

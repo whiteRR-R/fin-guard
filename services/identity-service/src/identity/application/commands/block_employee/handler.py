@@ -1,5 +1,5 @@
-from identity.application.commands.block_employee.command import BlockUserCommand
-from identity.application.commands.block_employee.result import BlockUserResult
+from identity.application.commands.block_employee.command import BlockEmployeeCommand
+from identity.application.commands.block_employee.result import BlockEmployeeResult
 from identity.application.exceptions import (
     AccessDeniedError,
     AuthenticationError,
@@ -33,7 +33,7 @@ class BlockEmployeeHandler:
         self._clock = clock
         self._block_policy = block_policy
 
-    async def execute(self, command: BlockUserCommand) -> BlockUserResult:
+    async def execute(self, command: BlockEmployeeCommand) -> BlockEmployeeResult:
         target_id = EmployeeId(command.target_id)
         actor_id = EmployeeId(command.actor_id)
 
@@ -46,16 +46,16 @@ class BlockEmployeeHandler:
             target = await self._employees.get_by_id(target_id)
 
             if target is None:
-                raise EmployeeNotFoundError("User not found")
+                raise EmployeeNotFoundError("Employee not found")
 
             try:
                 self._block_policy.ensure_allowed(actor=actor, target=target)
             except EmployeeBlockNotAllowedError as error:
-                raise AccessDeniedError("User blocking is not allowed") from error
+                raise AccessDeniedError("Employee blocking is not allowed") from error
 
             target.block()
 
-            sessions = await self._refresh_sessions.list_active_by_user(target_id)
+            sessions = await self._refresh_sessions.list_active_by_employee(target_id)
 
             now = self._clock.now()
 
@@ -66,4 +66,7 @@ class BlockEmployeeHandler:
             await self._employees.save(target)
             await self._uow.commit()
 
-        return BlockUserResult(user_id=target.id.value, status=target.status.value)
+        return BlockEmployeeResult(
+            employee_id=target.id.value,
+            status=target.status.value,
+        )

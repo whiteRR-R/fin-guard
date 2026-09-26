@@ -4,6 +4,6 @@ from uuid import UUID
 
 @dataclass(frozen=True)
 class ChangeEmailCommand:
-    user_id: UUID
+    employee_id: UUID
     new_email: str
     password: str = field(repr=False)

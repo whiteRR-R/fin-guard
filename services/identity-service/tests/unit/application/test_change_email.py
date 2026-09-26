@@ -7,7 +7,7 @@ from identity.application.commands.change_email.handler import ChangeEmailHandle
 from identity.application.exceptions import (
     EmailAlreadyTakenError,
     InvalidCurrentPasswordError,
-    InvalidEmpolyeeStateError,
+    InvalidEmployeeStateError,
 )
 from identity.domain.enums.status import EmployeeStatus
 from identity.domain.value_objects.email import Email
@@ -35,7 +35,7 @@ def test_active_employee_changes_email() -> None:
     asyncio.run(
         handler.execute(
             ChangeEmailCommand(
-                user_id=employee.id.value,
+                employee_id=employee.id.value,
                 new_email="  NEW@example.com ",
                 password=CURRENT_PASSWORD,
             )
@@ -62,7 +62,7 @@ def test_invalid_current_password_does_not_change_email() -> None:
         asyncio.run(
             handler.execute(
                 ChangeEmailCommand(
-                    user_id=employee.id.value,
+                    employee_id=employee.id.value,
                     new_email="new@example.com",
                     password=CURRENT_PASSWORD,
                 )
@@ -90,7 +90,7 @@ def test_taken_email_is_rejected() -> None:
         asyncio.run(
             handler.execute(
                 ChangeEmailCommand(
-                    user_id=employee.id.value,
+                    employee_id=employee.id.value,
                     new_email="TAKEN@example.com",
                     password=CURRENT_PASSWORD,
                 )
@@ -117,11 +117,11 @@ def test_invited_employee_without_password_hash_is_rejected() -> None:
         password_hasher=password_hasher,
     )
 
-    with pytest.raises(InvalidEmpolyeeStateError, match="password hash"):
+    with pytest.raises(InvalidEmployeeStateError, match="password hash"):
         asyncio.run(
             handler.execute(
                 ChangeEmailCommand(
-                    user_id=employee.id.value,
+                    employee_id=employee.id.value,
                     new_email="new@example.com",
                     password=CURRENT_PASSWORD,
                 )

@@ -3,6 +3,6 @@ from uuid import UUID
 
 
 @dataclass(frozen=True)
-class BlockUserCommand:
+class BlockEmployeeCommand:
     target_id: UUID
     actor_id: UUID

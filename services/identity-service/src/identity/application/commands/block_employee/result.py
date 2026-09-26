@@ -3,6 +3,6 @@ from uuid import UUID
 
 
 @dataclass(frozen=True)
-class BlockUserResult:
-    user_id: UUID
+class BlockEmployeeResult:
+    employee_id: UUID
     status: str

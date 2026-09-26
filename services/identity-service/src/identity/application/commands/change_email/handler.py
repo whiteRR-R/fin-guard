@@ -4,7 +4,7 @@ from identity.application.exceptions import (
     EmployeeNotFoundError,
     InvalidCurrentPasswordError,
     InvalidEmailError,
-    InvalidEmpolyeeStateError,
+    InvalidEmployeeStateError,
 )
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
@@ -28,7 +28,7 @@ class ChangeEmailHandler:
         self._password_hasher = password_hasher
 
     async def execute(self, command: ChangeEmailCommand):
-        employee_id = EmployeeId(command.user_id)
+        employee_id = EmployeeId(command.employee_id)
         new_email = Email(command.new_email)
         password = Password(command.password)
 
@@ -36,10 +36,10 @@ class ChangeEmailHandler:
             employee = await self._employees.get_by_id(employee_id)
             
             if employee is None:
-                raise EmployeeNotFoundError("User not found")
+                raise EmployeeNotFoundError("Employee not found")
 
             if employee.password_hash is None:
-                raise InvalidEmpolyeeStateError(
+                raise InvalidEmployeeStateError(
                     "Active employee must have a password hash"
                 )
                 

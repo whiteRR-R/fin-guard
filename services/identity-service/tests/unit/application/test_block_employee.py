@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from identity.application.commands.block_employee.command import BlockUserCommand
+from identity.application.commands.block_employee.command import BlockEmployeeCommand
 from identity.application.commands.block_employee.handler import BlockEmployeeHandler
 from identity.application.exceptions import AccessDeniedError, AuthenticationError
 from identity.domain.enums.role import EmployeeRole
@@ -41,14 +41,14 @@ def test_active_admin_blocks_employee_and_revokes_active_sessions() -> None:
 
     result = asyncio.run(
         handler.execute(
-            BlockUserCommand(
+            BlockEmployeeCommand(
                 actor_id=admin.id.value,
                 target_id=employee.id.value,
             )
         )
     )
 
-    assert result.user_id == employee.id.value
+    assert result.employee_id == employee.id.value
     assert result.status == EmployeeStatus.BLOCKED.value
     assert employee.status is EmployeeStatus.BLOCKED
     assert not session.is_active(NOW)
@@ -75,7 +75,7 @@ def test_non_admin_cannot_block_employee() -> None:
     with pytest.raises(AccessDeniedError, match="not allowed"):
         asyncio.run(
             handler.execute(
-                BlockUserCommand(
+                BlockEmployeeCommand(
                     actor_id=analyst.id.value,
                     target_id=target.id.value,
                 )
@@ -106,7 +106,7 @@ def test_missing_actor_is_rejected_before_target_lookup() -> None:
     with pytest.raises(AuthenticationError, match="Invalid actor"):
         asyncio.run(
             handler.execute(
-                BlockUserCommand(
+                BlockEmployeeCommand(
                     actor_id=missing_actor_id.value,
                     target_id=target.id.value,
                 )

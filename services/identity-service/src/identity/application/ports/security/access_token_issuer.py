@@ -16,7 +16,7 @@ class IssuedAccessToken:
 class AccessTokenIssuer(Protocol):
     def issue(
         self,
-        user_id: EmployeeId,
+        employee_id: EmployeeId,
         session_id: RefreshSessionId,
         roles: frozenset[EmployeeRole],
         issued_at: datetime,

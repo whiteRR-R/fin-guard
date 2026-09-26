@@ -1,5 +1,5 @@
-from identity.application.commands.unblock_employee.command import UnblockUserCommand
-from identity.application.commands.unblock_employee.result import UnblockUserResult
+from identity.application.commands.unblock_employee.command import UnblockEmployeeCommand
+from identity.application.commands.unblock_employee.result import UnblockEmployeeResult
 from identity.application.exceptions import (
     AccessDeniedError,
     AuthenticationError,
@@ -14,7 +14,7 @@ from identity.domain.policies.employee_unblock import EmployeeUnblockPolicy
 from identity.domain.value_objects.employee_id import EmployeeId
 
 
-class UnblockUserHandler:
+class UnblockEmployeeHandler:
     def __init__(
         self,
         uow: UnitOfWork,
@@ -25,7 +25,10 @@ class UnblockUserHandler:
         self._employees = employees
         self._unblock_policy = unblock_policy
 
-    async def execute(self, command: UnblockUserCommand) -> UnblockUserResult:
+    async def execute(
+        self,
+        command: UnblockEmployeeCommand,
+    ) -> UnblockEmployeeResult:
         target_id = EmployeeId(command.target_id)
         actor_id = EmployeeId(command.actor_id)
 
@@ -38,16 +41,19 @@ class UnblockUserHandler:
             target = await self._employees.get_by_id(target_id)
 
             if target is None:
-                raise EmployeeNotFoundError("User not found")
+                raise EmployeeNotFoundError("Employee not found")
 
             try:
                 self._unblock_policy.ensure_allowed(actor=actor, target=target)
             except EmployeeUnblockNotAllowedError as error:
-                raise AccessDeniedError("User unblocking is not allowed") from error
+                raise AccessDeniedError("Employee unblocking is not allowed") from error
 
             target.unblock()
 
             await self._employees.save(target)
             await self._uow.commit()
 
-        return UnblockUserResult(user_id=target.id.value, status=target.status.value)
+        return UnblockEmployeeResult(
+            employee_id=target.id.value,
+            status=target.status.value,
+        )

@@ -2,8 +2,8 @@ import asyncio
 
 import pytest
 
-from identity.application.commands.unblock_employee.command import UnblockUserCommand
-from identity.application.commands.unblock_employee.handler import UnblockUserHandler
+from identity.application.commands.unblock_employee.command import UnblockEmployeeCommand
+from identity.application.commands.unblock_employee.handler import UnblockEmployeeHandler
 from identity.application.exceptions import AccessDeniedError, AuthenticationError
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus
@@ -21,7 +21,7 @@ def test_active_admin_unblocks_employee() -> None:
     )
     employees = EmployeeRepositoryFake((admin, employee))
     uow = UnitOfWorkFake()
-    handler = UnblockUserHandler(
+    handler = UnblockEmployeeHandler(
         uow=uow,
         employees=employees,
         unblock_policy=EmployeeUnblockPolicy(),
@@ -29,14 +29,14 @@ def test_active_admin_unblocks_employee() -> None:
 
     result = asyncio.run(
         handler.execute(
-            UnblockUserCommand(
+            UnblockEmployeeCommand(
                 actor_id=admin.id.value,
                 target_id=employee.id.value,
             )
         )
     )
 
-    assert result.user_id == employee.id.value
+    assert result.employee_id == employee.id.value
     assert result.status == EmployeeStatus.ACTIVE.value
     assert employee.status is EmployeeStatus.ACTIVE
     assert employees.saved == [employee]
@@ -52,7 +52,7 @@ def test_non_admin_cannot_unblock_employee() -> None:
     )
     employees = EmployeeRepositoryFake((analyst, employee))
     uow = UnitOfWorkFake()
-    handler = UnblockUserHandler(
+    handler = UnblockEmployeeHandler(
         uow=uow,
         employees=employees,
         unblock_policy=EmployeeUnblockPolicy(),
@@ -61,7 +61,7 @@ def test_non_admin_cannot_unblock_employee() -> None:
     with pytest.raises(AccessDeniedError, match="not allowed"):
         asyncio.run(
             handler.execute(
-                UnblockUserCommand(
+                UnblockEmployeeCommand(
                     actor_id=analyst.id.value,
                     target_id=employee.id.value,
                 )
@@ -82,7 +82,7 @@ def test_missing_actor_is_rejected_before_target_lookup() -> None:
     missing_actor_id = EmployeeId.new()
     employees = EmployeeRepositoryFake((employee,))
     uow = UnitOfWorkFake()
-    handler = UnblockUserHandler(
+    handler = UnblockEmployeeHandler(
         uow=uow,
         employees=employees,
         unblock_policy=EmployeeUnblockPolicy(),
@@ -91,7 +91,7 @@ def test_missing_actor_is_rejected_before_target_lookup() -> None:
     with pytest.raises(AuthenticationError, match="Invalid actor"):
         asyncio.run(
             handler.execute(
-                UnblockUserCommand(
+                UnblockEmployeeCommand(
                     actor_id=missing_actor_id.value,
                     target_id=employee.id.value,
                 )

@@ -80,7 +80,7 @@ class LoginEmployeeHandler:
             )
 
             issued_access_token = self._access_token_issuer.issue(
-                user_id=employee.id,
+                employee_id=employee.id,
                 session_id=session_id,
                 roles=employee.roles,
                 issued_at=now,

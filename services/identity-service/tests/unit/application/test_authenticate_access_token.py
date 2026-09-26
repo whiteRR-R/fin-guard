@@ -46,7 +46,7 @@ def make_authenticator(
         session.revoke(NOW - timedelta(seconds=1))
 
     claims = AccessTokenClaims(
-        user_id=employee.id,
+        employee_id=employee.id,
         sid=session.id,
         roles=frozenset({EmployeeRole.RISK_ANALYST}),
         expires_at=token_expires_at,

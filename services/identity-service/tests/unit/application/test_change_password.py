@@ -7,7 +7,7 @@ from identity.application.commands.change_password.command import (
     ChangePasswordCommand,
 )
 from identity.application.commands.change_password.handler import (
-    ChangeUserPasswordHandler,
+    ChangePasswordHandler,
 )
 from identity.application.exceptions import EmployeeNotActiveError, InvalidPasswordError
 from identity.domain.enums.status import EmployeeStatus
@@ -41,7 +41,7 @@ def test_change_password_revokes_sessions_and_commits_once() -> None:
         hash_result=NEW_PASSWORD_HASH,
     )
     uow = UnitOfWorkFake()
-    handler = ChangeUserPasswordHandler(
+    handler = ChangePasswordHandler(
         uow=uow,
         employees=employees,
         refresh_sessions=refresh_sessions,
@@ -77,7 +77,7 @@ def test_new_password_must_differ_from_current_password() -> None:
         verify_results=(True, True),
     )
     uow = UnitOfWorkFake()
-    handler = ChangeUserPasswordHandler(
+    handler = ChangePasswordHandler(
         uow=uow,
         employees=employees,
         refresh_sessions=refresh_sessions,
@@ -112,7 +112,7 @@ def test_blocked_employee_cannot_change_password() -> None:
     refresh_sessions = RefreshSessionRepositoryFake(active_at=NOW)
     password_hasher = PasswordHasherStub(password_is_valid=True)
     uow = UnitOfWorkFake()
-    handler = ChangeUserPasswordHandler(
+    handler = ChangePasswordHandler(
         uow=uow,
         employees=employees,
         refresh_sessions=refresh_sessions,

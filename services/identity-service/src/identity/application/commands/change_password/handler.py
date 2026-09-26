@@ -5,7 +5,7 @@ from identity.application.exceptions import (
     EmployeeNotActiveError,
     EmployeeNotFoundError,
     InvalidCurrentPasswordError,
-    InvalidEmpolyeeStateError,
+    InvalidEmployeeStateError,
     InvalidPasswordError,
 )
 from identity.application.ports.clock import Clock
@@ -22,7 +22,7 @@ from identity.domain.value_objects.employee_id import EmployeeId
 from identity.domain.value_objects.password import Password
 
 
-class ChangeUserPasswordHandler:
+class ChangePasswordHandler:
     def __init__(
         self,
         uow: UnitOfWork,
@@ -46,13 +46,13 @@ class ChangeUserPasswordHandler:
             employee = await self._employees.get_by_id(employee_id)
 
             if employee is None:
-                raise EmployeeNotFoundError("User not found")
+                raise EmployeeNotFoundError("Employee not found")
 
             if employee.status is not EmployeeStatus.ACTIVE:
                 raise EmployeeNotActiveError("Only active employee can change password")
 
             if employee.password_hash is None:
-                raise InvalidEmpolyeeStateError(
+                raise InvalidEmployeeStateError(
                     "Active employee must have a password hash" 
                 )
             
@@ -77,7 +77,7 @@ class ChangeUserPasswordHandler:
 
             employee.change_password(new_password_hash)
 
-            sessions = await self._refresh_sessions.list_active_by_user(employee_id)
+            sessions = await self._refresh_sessions.list_active_by_employee(employee_id)
 
             now = self._clock.now()
 

@@ -9,3 +9,4 @@ from identity.application.messages.base import OutboxMessage
 class InvitationEmailRequested(OutboxMessage):
     invitation_id: UUID
     recipient_email: str
+    

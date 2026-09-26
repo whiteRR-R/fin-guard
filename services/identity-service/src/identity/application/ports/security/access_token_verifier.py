@@ -9,7 +9,7 @@ from identity.domain.value_objects.refresh_session import RefreshSessionId
 
 @dataclass(frozen=True, kw_only=True, slots=True)
 class AccessTokenClaims:
-    user_id: EmployeeId
+    employee_id: EmployeeId
     sid: RefreshSessionId
     roles: frozenset[EmployeeRole]
     expires_at: datetime

@@ -21,7 +21,7 @@ from identity.domain.value_objects.invitation_id import InvitationId
 from identity.domain.value_objects.password import Password
 
 
-class AcceptInvitionHandler:
+class AcceptInvitationHandler:
     def __init__(
         self,
         uow: UnitOfWork,

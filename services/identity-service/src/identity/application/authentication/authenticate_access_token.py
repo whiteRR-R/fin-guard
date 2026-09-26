@@ -51,15 +51,15 @@ class AuthenticateAccessToken:
             if session is None:
                 raise AuthenticationError("Invalid session")
 
-            if session.employee_id != claims.user_id:
+            if session.employee_id != claims.employee_id:
                 raise AuthenticationError("Invalid session")
 
             if not session.is_active(now):
                 raise AuthenticationError("Session is revoked")
 
-            user = await self._employees.get_by_id(claims.user_id)
+            employee = await self._employees.get_by_id(claims.employee_id)
 
-            if user is None or user.status is not EmployeeStatus.ACTIVE:
-                raise AuthenticationError("User is not active")
+            if employee is None or employee.status is not EmployeeStatus.ACTIVE:
+                raise AuthenticationError("Employee is not active")
 
-        return CurrentActor(employee_id=user.id, roles=user.roles)
+        return CurrentActor(employee_id=employee.id, roles=employee.roles)
