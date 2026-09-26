@@ -102,10 +102,8 @@ class ReissueInvitationHandler:
 
             new_invitation_id = InvitationId.new()
 
-            issued_token = self._invitation_token_issuer.issue(
+            issued_invitation_token = self._invitation_token_issuer.issue(
                 invitation_id=new_invitation_id,
-                invited_by=inviter_id,
-                employee_email=invited_email,
                 issued_at=now,
             )
 
@@ -113,10 +111,10 @@ class ReissueInvitationHandler:
                 invitation_id=new_invitation_id,
                 invited_by=inviter.id,
                 invited_email=invited_email,
-                token_hash=issued_token.token_hash,
+                token_hash=issued_invitation_token.token_hash,
                 roles=invited_employee.roles,
                 created_at=now,
-                expires_at=issued_token.expires_at,
+                expires_at=issued_invitation_token.expires_at,
             )
 
             outbox_message = InvitationEmailRequested(

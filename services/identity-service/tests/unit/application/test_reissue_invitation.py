@@ -112,14 +112,14 @@ def test_reissue_expired_invitation_saves_new_invitation_and_outbox() -> None:
     assert invitation.created_at == NOW
     assert invitation.expires_at == TOKEN_EXPIRES_AT
 
-    assert token_issuer.calls == [
-        (invitation.id, admin.id, invited_employee.email, NOW)
-    ]
+    assert token_issuer.calls == [(invitation.id, NOW)]
     assert len(outbox.added) == 1
     message = outbox.added[0]
     assert isinstance(message, InvitationEmailRequested)
     assert message.invitation_id == invitation.id.value
     assert message.recipient_email == invited_employee.email.value
+    assert not hasattr(message, "invitation_token")
+    assert "plain-reissued-invitation-token" not in repr(message)
     assert uow.commit_count == 1
     assert uow.rollback_count == 0
 

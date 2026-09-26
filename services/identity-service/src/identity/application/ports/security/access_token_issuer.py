@@ -9,7 +9,7 @@ from identity.domain.value_objects.refresh_session import RefreshSessionId
 
 @dataclass(frozen=True, slots=True)
 class IssuedAccessToken:
-    value: str = field(repr=False)
+    plain_token: str = field(repr=False)
     expires_at: datetime
 
 

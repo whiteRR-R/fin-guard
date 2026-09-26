@@ -90,7 +90,7 @@ class LoginEmployeeHandler:
             await self._uow.commit()
 
         return LoginEmployeeResult(
-            access_token=issued_access_token,
-            refresh_token=issued_refresh_token,
-            refresh_token_expires_at=refresh_expires_at,
+            access_token=issued_access_token.plain_token,
+            refresh_token=issued_refresh_token.plain_token,
+            refresh_token_expires_at=refresh_expires_at
         )

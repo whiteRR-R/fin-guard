@@ -100,14 +100,14 @@ def test_invite_employee_saves_aggregates_and_outbox_in_one_unit_of_work() -> No
     assert invitation.created_at == NOW
     assert invitation.expires_at == TOKEN_EXPIRES_AT
 
-    assert token_issuer.calls == [
-        (invitation.id, admin.id, employee.email, NOW)
-    ]
+    assert token_issuer.calls == [(invitation.id, NOW)]
     assert len(outbox.added) == 1
     message = outbox.added[0]
     assert isinstance(message, InvitationEmailRequested)
     assert message.invitation_id == invitation.id.value
     assert message.recipient_email == employee.email.value
+    assert not hasattr(message, "invitation_token")
+    assert "plain-invitation-token" not in repr(message)
     assert uow.commit_count == 1
     assert uow.rollback_count == 0
 

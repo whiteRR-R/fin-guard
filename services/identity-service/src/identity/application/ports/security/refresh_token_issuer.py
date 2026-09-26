@@ -9,6 +9,7 @@ from identity.domain.value_objects.refresh_session import (
 
 @dataclass(frozen=True, slots=True)
 class IssuedRefreshToken:
+    plain_token: str = field(repr=False)
     token_hash: RefreshTokenHash = field(repr=False)
 
 

@@ -1,14 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-
-from identity.application.ports.security.access_token_issuer import IssuedAccessToken
-from identity.application.ports.security.refresh_token_issuer import (
-    IssuedRefreshToken,
-)
-
 
 @dataclass(frozen=True)
 class LoginEmployeeResult:
-    access_token: IssuedAccessToken
-    refresh_token: IssuedRefreshToken
+    access_token: str = field(repr=False)
+    refresh_token: str = field(repr=False)
     refresh_token_expires_at: datetime

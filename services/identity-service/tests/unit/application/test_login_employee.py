@@ -55,12 +55,13 @@ def make_context(
     )
     access_token_issuer = AccessTokenIssuerStub(
         IssuedAccessToken(
-            value="access-token",
+            plain_token="access-token",
             expires_at=NOW + timedelta(minutes=15),
         )
     )
     refresh_token_issuer = RefreshTokenIssuerStub(
         IssuedRefreshToken(
+            plain_token="issued-refresh-token",
             token_hash=RefreshTokenHash("issued-refresh-token-hash"),
         )
     )
@@ -109,21 +110,32 @@ def test_active_employee_with_valid_password_receives_tokens() -> None:
         )
     )
 
-    assert result.access_token.value == "access-token"
-    assert result.refresh_token.token_hash == RefreshTokenHash(
-        "issued-refresh-token-hash"
-    )
+    assert result.access_token == "access-token"
+    assert result.refresh_token == "issued-refresh-token"
     assert result.refresh_token_expires_at == NOW + REFRESH_TOKEN_LIFETIME
     assert len(context.refresh_sessions.added) == 1
     session = context.refresh_sessions.added[0]
     assert session.employee_id == employee.id
-    assert session.refresh_token_hash == result.refresh_token.token_hash
+    assert session.refresh_token_hash == RefreshTokenHash("issued-refresh-token-hash")
+    assert session.refresh_token_hash.value != result.refresh_token
+    assert "issued-refresh-token" not in repr(result)
+    assert "issued-refresh-token-hash" not in repr(result)
     assert session.expires_at == NOW + REFRESH_TOKEN_LIFETIME
     assert context.uow.commit_count == 1
     assert context.uow.rollback_count == 0
     assert len(context.password_hasher.verify_calls) == 1
     assert len(context.access_token_issuer.calls) == 1
     assert len(context.refresh_token_issuer.calls) == 1
+
+
+def test_issued_refresh_token_repr_hides_plain_token_and_hash() -> None:
+    issued_token = IssuedRefreshToken(
+        plain_token="plain-secret",
+        token_hash=RefreshTokenHash("stored-secret-hash"),
+    )
+
+    assert "plain-secret" not in repr(issued_token)
+    assert "stored-secret-hash" not in repr(issued_token)
 
 
 def test_missing_employee_returns_generic_authentication_error() -> None:

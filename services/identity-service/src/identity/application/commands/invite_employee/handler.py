@@ -71,8 +71,6 @@ class InviteEmployeeHandler:
 
             issued_invitation_token = self._invitation_token_issuer.issue(
                 invitation_id=invitation_id,
-                invited_by=inviter.id,
-                employee_email=employee_email,
                 issued_at=now,
             )
 
@@ -90,14 +88,14 @@ class InviteEmployeeHandler:
                 expires_at=issued_invitation_token.expires_at,
             )
             
-            email_message = InvitationEmailRequested(
+            outbox_message = InvitationEmailRequested(
                 invitation_id=invitation_id.value,
-                recipient_email=employee_email.value
+                recipient_email=employee_email.value,
             )
 
             await self._employees.add(employee)
             await self._invitations.add(invitation)
-            await self._outbox.add(email_message)
+            await self._outbox.add(outbox_message)
 
             await self._uow.commit()
 

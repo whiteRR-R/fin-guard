@@ -11,6 +11,7 @@ from identity.application.commands.accept_invitation.handler import (
 )
 from identity.application.exceptions import (
     EmployeeNotFoundError,
+    InvalidInvitationTokenError,
     InvitationNotFoundError,
 )
 from identity.application.ports.security.invitation_token_verifier import (
@@ -64,6 +65,7 @@ def make_handler(
     additional_invitations: tuple[Invitation, ...] = (),
     invitation_exists: bool = True,
     employee_exists: bool = True,
+    hash_matches: bool = True,
 ) -> tuple[
     AcceptInvitationHandler,
     UnitOfWorkFake,
@@ -88,7 +90,8 @@ def make_handler(
         hash_result=PASSWORD_HASH,
     )
     token_verifier = InvitationTokenVerifierStub(
-        InvitationTokenClaims(invitation_id=invitation.id.value)
+        InvitationTokenClaims(invitation_id=invitation.id.value),
+        hash_matches=hash_matches,
     )
     uow = UnitOfWorkFake()
     handler = AcceptInvitationHandler(
@@ -140,6 +143,7 @@ def test_accept_invitation_saves_accepted_invitation_and_active_employee() -> No
 
     assert password_hasher.hash_calls == [Password(VALID_PASSWORD)]
     assert token_verifier.received_tokens == [PLAIN_TOKEN]
+    assert token_verifier.checked_hashes == [invitation.token_hash]
     assert uow.commit_count == 1
     assert uow.rollback_count == 0
 
@@ -173,6 +177,24 @@ def test_missing_employee_is_rejected_before_password_hashing() -> None:
 
     assert employees.requested_emails == [invitation.invited_email]
     assert password_hasher.hash_calls == []
+    assert invitations.saved == []
+    assert uow.commit_count == 0
+    assert uow.rollback_count == 1
+
+
+def test_token_with_wrong_hash_cannot_activate_employee() -> None:
+    invitation = make_invitation()
+    handler, uow, employees, invitations, password_hasher, verifier = make_handler(
+        invitation=invitation, hash_matches=False
+    )
+
+    with pytest.raises(InvalidInvitationTokenError):
+        execute_accept(handler)
+
+    assert verifier.checked_hashes == [invitation.token_hash]
+    assert employees.requested_emails == []
+    assert password_hasher.hash_calls == []
+    assert invitation.status is InvitationStatus.PENDING
     assert invitations.saved == []
     assert uow.commit_count == 0
     assert uow.rollback_count == 1

@@ -25,6 +25,7 @@ from identity.domain.enums.role import EmployeeRole
 from identity.domain.value_objects.email import Email
 from identity.domain.value_objects.employee_id import EmployeeId
 from identity.domain.value_objects.invitation_id import InvitationId
+from identity.domain.value_objects.invitation_token_hash import InvitationTokenHash
 from identity.domain.value_objects.password import HashedPassword, Password
 from identity.domain.value_objects.refresh_session import RefreshSessionId
 
@@ -237,29 +238,35 @@ class RefreshTokenIssuerStub:
 class InvitationTokenIssuerStub:
     def __init__(self, result: IssuedInvitationToken) -> None:
         self._result = result
-        self.calls: list[tuple[InvitationId, EmployeeId, Email, datetime]] = []
+        self.calls: list[tuple[InvitationId, datetime]] = []
 
     def issue(
         self,
         invitation_id: InvitationId,
-        invited_by: EmployeeId,
-        employee_email: Email,
         issued_at: datetime,
     ) -> IssuedInvitationToken:
-        self.calls.append(
-            (invitation_id, invited_by, employee_email, issued_at)
-        )
+        self.calls.append((invitation_id, issued_at))
         return self._result
 
 
 class InvitationTokenVerifierStub:
-    def __init__(self, claims: InvitationTokenClaims) -> None:
+    def __init__(
+        self, claims: InvitationTokenClaims, *, hash_matches: bool = True
+    ) -> None:
         self._claims = claims
+        self._hash_matches = hash_matches
         self.received_tokens: list[str] = []
+        self.checked_hashes: list[InvitationTokenHash] = []
 
-    def verify(self, token: str) -> InvitationTokenClaims:
+    def parse_verified(self, token: str) -> InvitationTokenClaims:
         self.received_tokens.append(token)
         return self._claims
+
+    def matches_hash(
+        self, plain_token: str, expected_hash: InvitationTokenHash
+    ) -> bool:
+        self.checked_hashes.append(expected_hash)
+        return self._hash_matches
 
 
 class AccessTokenVerifierStub:

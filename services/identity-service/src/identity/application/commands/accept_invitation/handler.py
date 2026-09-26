@@ -3,6 +3,7 @@ from identity.application.commands.accept_invitation.command import (
 )
 from identity.application.exceptions import (
     EmployeeNotFoundError,
+    InvalidInvitationTokenError,
     InvitationNotFoundError,
 )
 from identity.application.ports.clock import Clock
@@ -40,7 +41,8 @@ class AcceptInvitationHandler:
         self._invitation_verifier = invitation_verifier
 
     async def execute(self, command: AcceptInvitationCommand):
-        claims = self._invitation_verifier.verify(command.token)
+        plain_token = command.token
+        claims = self._invitation_verifier.parse_verified(plain_token)
 
         invitation_id = InvitationId(claims.invitation_id)
         password = Password(command.password)
@@ -50,6 +52,11 @@ class AcceptInvitationHandler:
 
             if existing_invitation is None:
                 raise InvitationNotFoundError("Invitation not found")
+
+            if not self._invitation_verifier.matches_hash(
+                plain_token, existing_invitation.token_hash
+            ):
+                raise InvalidInvitationTokenError("Invalid invitation token")
 
             existing_employee = await self._employees.get_by_email(
                 existing_invitation.invited_email
