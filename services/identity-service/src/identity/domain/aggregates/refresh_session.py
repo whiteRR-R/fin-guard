@@ -61,6 +61,10 @@ class RefreshSession:
         return self._refresh_token_hash
 
     @property
+    def created_at(self) -> datetime:
+        return self._created_at
+
+    @property
     def expires_at(self) -> datetime:
         return self._expires_at
 
