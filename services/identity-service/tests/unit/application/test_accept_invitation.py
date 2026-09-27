@@ -134,6 +134,7 @@ def test_accept_invitation_saves_accepted_invitation_and_active_employee() -> No
     assert invitation.status is InvitationStatus.ACCEPTED
     assert invitation.accepted_at == NOW
     assert invitations.saved == [invitation]
+    assert invitations.locked_ids == [invitation.id]
 
     assert len(employees.saved) == 1
     employee = employees.saved[0]

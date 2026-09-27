@@ -166,6 +166,7 @@ def test_reissue_pending_invitation_revokes_previous_invitation() -> None:
     assert current_invitation.status is InvitationStatus.REVOKED
     assert current_invitation.revoked_at == NOW
     assert invitations.saved == [current_invitation]
+    assert invitations.locked_ids == [current_invitation.id]
     assert len(invitations.added) == 1
     assert len(outbox.added) == 1
     assert uow.commit_count == 1

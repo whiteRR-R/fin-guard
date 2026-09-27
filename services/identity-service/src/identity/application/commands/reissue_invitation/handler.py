@@ -79,8 +79,10 @@ class ReissueInvitationHandler:
                     "Only an invited employee can receive a new invitation"
                 )
 
-            current_invitation = await self._invitations.get_latest_by_employee_email(
-                invited_email
+            current_invitation = (
+                await self._invitations.get_latest_by_employee_email_with_lock(
+                    invited_email
+                )
             )
 
             if current_invitation is None:

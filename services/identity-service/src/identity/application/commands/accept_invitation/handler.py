@@ -48,7 +48,7 @@ class AcceptInvitationHandler:
         password = Password(command.password)
 
         async with self._uow:
-            existing_invitation = await self._invitations.get_by_id(invitation_id)
+            existing_invitation = await self._invitations.get_by_id_with_lock(invitation_id)
 
             if existing_invitation is None:
                 raise InvitationNotFoundError("Invitation not found")
@@ -58,7 +58,7 @@ class AcceptInvitationHandler:
             ):
                 raise InvalidInvitationTokenError("Invalid invitation token")
 
-            existing_employee = await self._employees.get_by_email(
+            existing_employee = await self._employees.get_by_email_with_lock(
                 existing_invitation.invited_email
             )
 
