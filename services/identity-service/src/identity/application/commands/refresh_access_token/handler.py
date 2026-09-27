@@ -37,20 +37,20 @@ class RefreshAccessTokenHandler:
         self,
         uow: UnitOfWork,
         clock: Clock,
-        refresh_session_repository: RefreshSessionRepository,
-        employee_repository: EmployeeRepository,
         access_token_issuer: AccessTokenIssuer,
         refresh_token_issuer: RefreshTokenIssuer,
         refresh_token_verifier: RefreshTokenVerifier,
+        refresh_session_repository: RefreshSessionRepository,
+        employee_repository: EmployeeRepository,
         outbox_repository: OutboxRepository,
     ) -> None:
         self._uow = uow
         self._clock = clock
-        self._refresh_session_repository = refresh_session_repository
-        self._employee_repository = employee_repository
         self._access_token_issuer = access_token_issuer
         self._refresh_token_issuer = refresh_token_issuer
         self._refresh_token_verifier = refresh_token_verifier
+        self._refresh_session_repository = refresh_session_repository
+        self._employee_repository = employee_repository
         self._outbox_repository = outbox_repository
 
     async def execute(
@@ -111,6 +111,7 @@ class RefreshAccessTokenHandler:
                     created_at=now,
                 )
                 await self._outbox_repository.add(outbox_message)
+
             else:
                 issued_refresh_token = self._refresh_token_issuer.issue(
                     session_id=session.id
