@@ -6,6 +6,14 @@ from identity.domain.value_objects.invitation_id import InvitationId
 
 
 class InvitationRepository(Protocol):
+    async def get_by_id_with_lock(
+        self, invitation_id: InvitationId
+    ) -> Invitation | None: ...
+
+    async def get_latest_by_employee_email_with_lock(
+        self, email: Email
+    ) -> Invitation | None: ...
+
     async def get_by_id(self, invitation_id: InvitationId) -> Invitation | None: ...
     
     async def get_latest_by_employee_email(self, email: Email) -> Invitation | None: ...

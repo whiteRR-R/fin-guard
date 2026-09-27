@@ -22,6 +22,7 @@ from identity.domain.aggregates.employee_account import EmployeeAccount
 from identity.domain.aggregates.invitation import Invitation
 from identity.domain.aggregates.refresh_session import RefreshSession
 from identity.domain.enums.role import EmployeeRole
+from identity.domain.enums.status import EmployeeStatus
 from identity.domain.value_objects.email import Email
 from identity.domain.value_objects.employee_id import EmployeeId
 from identity.domain.value_objects.invitation_id import InvitationId
@@ -51,8 +52,35 @@ class EmployeeRepositoryFake:
         self._employees = {employee.id: employee for employee in employees}
         self.requested_ids: list[EmployeeId] = []
         self.requested_emails: list[Email] = []
+        self.requested_pages: list[tuple[int, int]] = []
+        self.lock_role_changes_count = 0
+        self.locked_ids: list[EmployeeId] = []
+        self.count_active_admins_count = 0
         self.added: list[EmployeeAccount] = []
         self.saved: list[EmployeeAccount] = []
+
+    async def has_admin(self) -> bool:
+        return any(
+            EmployeeRole.ADMIN in employee.roles
+            for employee in self._employees.values()
+        )
+
+    async def lock_role_changes(self) -> None:
+        self.lock_role_changes_count += 1
+
+    async def count_active_admins(self) -> int:
+        self.count_active_admins_count += 1
+        return sum(
+            employee.status is EmployeeStatus.ACTIVE
+            and EmployeeRole.ADMIN in employee.roles
+            for employee in self._employees.values()
+        )
+
+    async def get_by_id_with_lock(
+        self, employee_id: EmployeeId
+    ) -> EmployeeAccount | None:
+        self.locked_ids.append(employee_id)
+        return self._employees.get(employee_id)
 
     async def get_by_id(self, id: EmployeeId) -> EmployeeAccount | None:
         self.requested_ids.append(id)
@@ -69,6 +97,16 @@ class EmployeeRepositoryFake:
             None,
         )
 
+    async def get_by_email_with_lock(self, email: Email) -> EmployeeAccount | None:
+        return await self.get_by_email(email)
+
+    async def list_page(self, *, limit: int, offset: int) -> list[EmployeeAccount]:
+        self.requested_pages.append((limit, offset))
+        employees = sorted(
+            self._employees.values(), key=lambda employee: employee.id.value.int
+        )
+        return employees[offset : offset + limit]
+
     async def add(self, employee: EmployeeAccount) -> None:
         self._employees[employee.id] = employee
         self.added.append(employee)
@@ -84,8 +122,23 @@ class InvitationRepositoryFake:
             invitation.id: invitation for invitation in invitations
         }
         self.requested_employee_emails: list[Email] = []
+        self.locked_ids: list[InvitationId] = []
         self.added: list[Invitation] = []
         self.saved: list[Invitation] = []
+
+    async def get_by_id_with_lock(
+        self, invitation_id: InvitationId
+    ) -> Invitation | None:
+        self.locked_ids.append(invitation_id)
+        return self._invitations.get(invitation_id)
+
+    async def get_latest_by_employee_email_with_lock(
+        self, email: Email
+    ) -> Invitation | None:
+        invitation = await self.get_latest_by_employee_email(email)
+        if invitation is not None:
+            self.locked_ids.append(invitation.id)
+        return invitation
 
     async def get_by_id(self, invitation_id: InvitationId) -> Invitation | None:
         return self._invitations.get(invitation_id)
