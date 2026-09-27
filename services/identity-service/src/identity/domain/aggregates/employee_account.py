@@ -74,6 +74,24 @@ class EmployeeAccount:
         return employee
 
     @classmethod
+    def create_admin(
+        cls,
+        *,
+        employee_id: EmployeeId,
+        email: Email,
+        password_hash: HashedPassword,
+    ) -> "EmployeeAccount":
+        employee = cls(
+            employee_id=employee_id,
+            email=email,
+            password_hash=password_hash,
+            roles=(EmployeeRole.ADMIN,),
+            status=EmployeeStatus.ACTIVE,
+        )
+        employee._record_event(EmployeeActivated(employee_id=employee_id))
+        return employee
+
+    @classmethod
     def restore(
         cls,
         *,

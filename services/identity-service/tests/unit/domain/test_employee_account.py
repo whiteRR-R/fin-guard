@@ -54,6 +54,26 @@ def test_invite_creates_invited_account_without_password() -> None:
     assert isinstance(events[0], EmployeeInvited)
 
 
+def test_create_admin_creates_active_account_without_invitation_event() -> None:
+    employee_id = EmployeeId.new()
+    email = Email("admin@example.com")
+    password_hash = HashedPassword("admin-hash")
+
+    employee = EmployeeAccount.create_admin(
+        employee_id=employee_id, email=email, password_hash=password_hash
+    )
+
+    assert employee.id == employee_id
+    assert employee.email == email
+    assert employee.roles == frozenset({EmployeeRole.ADMIN})
+    assert employee.status is EmployeeStatus.ACTIVE
+    assert employee.password_hash == password_hash
+    events = employee.pull_events()
+    assert len(events) == 1
+    assert isinstance(events[0], EmployeeActivated)
+    assert events[0].employee_id == employee_id
+
+
 def test_invite_rejects_empty_roles() -> None:
     with pytest.raises(EmployeeRoleError):
         make_invited_employee(roles=())
