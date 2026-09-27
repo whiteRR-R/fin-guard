@@ -15,11 +15,13 @@ from identity.application.ports.unit_of_work import UnitOfWork
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus
 from identity.domain.value_objects.employee_id import EmployeeId
+from identity.domain.value_objects.refresh_session import RefreshSessionId
 
 
 @dataclass(frozen=True, slots=True)
 class CurrentActor:
     employee_id: EmployeeId
+    session_id: RefreshSessionId
     roles: frozenset[EmployeeRole]
 
 
@@ -62,4 +64,8 @@ class AuthenticateAccessToken:
             if employee is None or employee.status is not EmployeeStatus.ACTIVE:
                 raise AuthenticationError("Employee is not active")
 
-        return CurrentActor(employee_id=employee.id, roles=employee.roles)
+        return CurrentActor(
+            employee_id=employee.id,
+            session_id=session.id,
+            roles=employee.roles,
+        )

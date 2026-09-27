@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Protocol
 
 from identity.domain.aggregates.refresh_session import RefreshSession
@@ -33,6 +34,13 @@ class RefreshSessionRepository(Protocol):
     async def list_active_by_employee(
         self,
         employee_id: EmployeeId,
+    ) -> list[RefreshSession]: ...
+
+    async def list_active_by_employee_with_lock(
+        self,
+        employee_id: EmployeeId,
+        *,
+        active_at: datetime,
     ) -> list[RefreshSession]: ...
 
     async def add(self, refresh_session: RefreshSession) -> None: ...

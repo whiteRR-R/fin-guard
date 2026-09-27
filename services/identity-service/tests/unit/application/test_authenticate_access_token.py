@@ -69,12 +69,13 @@ def make_authenticator(
 
 
 def test_returns_current_roles_from_employee_account() -> None:
-    authenticator, uow, employees, _, verifier = make_authenticator()
+    authenticator, uow, employees, refresh_sessions, verifier = make_authenticator()
 
     actor = asyncio.run(authenticator.execute("access-token"))
 
     assert actor.roles == frozenset({EmployeeRole.ADMIN})
     assert actor.employee_id == employees.requested_ids[0]
+    assert actor.session_id == refresh_sessions.requested_ids[0]
     assert verifier.received_tokens == ["access-token"]
     assert uow.commit_count == 0
 
