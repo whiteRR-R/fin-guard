@@ -7,7 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import InvitationStatus
 from identity.infrastructure.persistence.models.base import Base
-from identity.infrastructure.persistence.models.enum_types import employee_role_type
+from identity.infrastructure.persistence.models.enum_types import employee_role_type, invitation_status_type
 
 
 class InvitationModel(Base):
@@ -31,12 +31,7 @@ class InvitationModel(Base):
         nullable=False,
     )
     status: Mapped[InvitationStatus] = mapped_column(
-        Enum(
-            InvitationStatus,
-            name="invitation_status",
-            native_enum=True,
-            validate_strings=True,
-        ),
+        invitation_status_type,
         nullable=False,
     )
     token_hash: Mapped[str] = mapped_column(nullable=False)

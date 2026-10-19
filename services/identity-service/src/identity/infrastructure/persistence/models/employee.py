@@ -7,7 +7,10 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus
 from identity.infrastructure.persistence.models.base import Base
-from identity.infrastructure.persistence.models.enum_types import employee_role_type
+from identity.infrastructure.persistence.models.enum_types import (
+    employee_role_type,
+    employee_status_type,
+)
 
 if TYPE_CHECKING:
     from identity.infrastructure.persistence.models.session import SessionModel
@@ -24,12 +27,7 @@ class EmployeeModel(Base):
     )
     password_hash: Mapped[str | None] = mapped_column(nullable=True)
     status: Mapped[EmployeeStatus] = mapped_column(
-        Enum(
-            EmployeeStatus,
-            name="employee_status",
-            native_enum=True,
-            validate_strings=True,
-        ),
+        employee_status_type,
         nullable=False,
     )
 

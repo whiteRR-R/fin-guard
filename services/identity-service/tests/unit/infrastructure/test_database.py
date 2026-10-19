@@ -6,6 +6,7 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
 from pydantic import ValidationError
 from sqlalchemy import create_engine
 from sqlalchemy.engine import make_url
@@ -23,6 +24,7 @@ MIGRATION_CONFIG = (
     Path(__file__).resolve().parents[3]
     / "src/identity/infrastructure/migration/migration.ini"
 )
+ROOT_MIGRATION_CONFIG = Path(__file__).resolve().parents[3] / "alembic.ini"
 
 
 @pytest.fixture(autouse=True)
@@ -131,13 +133,20 @@ def test_alembic_upgrade_and_downgrade_with_shared_connection(
         with engine.begin() as connection:
             config.attributes["connection"] = connection
 
-            command.upgrade(config, "head")
+            command.upgrade(config, "b7c84a19d5e2")
             assert MigrationContext.configure(connection).get_current_revision() == "b7c84a19d5e2"
 
             command.downgrade(config, "base")
             assert MigrationContext.configure(connection).get_current_revision() is None
     finally:
         engine.dispose()
+
+
+def test_root_alembic_config_finds_migrations() -> None:
+    config = Config(str(ROOT_MIGRATION_CONFIG))
+
+    assert Path(config.get_main_option("script_location")).is_dir()
+    assert ScriptDirectory.from_config(config).get_current_head() == "f3d69a58c214"
 
 
 @pytest.mark.parametrize(
@@ -163,8 +172,42 @@ def test_alembic_generates_postgresql_sql(
 
     output = capsys.readouterr().out
     assert "CREATE TABLE alembic_version" in output
-    assert "b7c84a19d5e2" in output
+    assert "f3d69a58c214" in output
+    for enum_type in ("employee_role", "employee_status", "invitation_status"):
+        assert f"CREATE TYPE {enum_type} AS ENUM" in output
+    for table in (
+        "employee",
+        "invitation",
+        "session",
+        "used_refresh_token",
+        "outbox_message",
+    ):
+        assert f"CREATE TABLE {table} (" in output
+    assert "CREATE UNIQUE INDEX uq_employee_email_lower" in output
+    assert "CONSTRAINT ck_invitation_roles_nonempty" in output
+    assert "PRIMARY KEY (session_id, token_hash)" in output
+    assert "payload JSONB NOT NULL" in output
+    assert "WHERE published_at IS NULL" in output
     assert "secret" not in output
     configured_url = config.get_main_option("sqlalchemy.url")
     assert configured_url is not None
     assert make_url(configured_url).password == password
+
+
+def test_new_migration_starts_from_applied_revision(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setenv(
+        "DATABASE_URL",
+        "postgresql+asyncpg://user:secret@localhost/identity",
+    )
+    config = Config(str(MIGRATION_CONFIG))
+
+    command.upgrade(config, "e2a71f5b0c38:head", sql=True)
+
+    output = capsys.readouterr().out
+    assert "CREATE TABLE used_refresh_token" in output
+    assert "CREATE TABLE outbox_message" in output
+    assert "CREATE TABLE employee" not in output
+    assert "f3d69a58c214" in output
