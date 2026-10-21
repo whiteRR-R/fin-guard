@@ -8,7 +8,7 @@ from identity.infrastructure.persistence.models.employee import EmployeeModel
 class EmployeeMapper:
 
     @staticmethod
-    def to_domain(model: EmployeeModel):
+    def to_domain(model: EmployeeModel) -> EmployeeAccount:
         password_hash = (
             HashedPassword(model.password_hash) if model.password_hash else None
         )
@@ -22,11 +22,11 @@ class EmployeeMapper:
         )
 
     @staticmethod
-    def to_model(employee: EmployeeAccount):
+    def to_model(employee: EmployeeAccount) -> EmployeeModel:
 
         password_hash = employee.password_hash
 
-        EmployeeModel(
+        return EmployeeModel(
             id=employee.id.value,
             email=employee.email.value,
             roles=sorted(employee.roles, key=lambda role: role.value),
@@ -35,7 +35,7 @@ class EmployeeMapper:
         )
 
     @staticmethod
-    def update_model(employee: EmployeeAccount, model: EmployeeModel):
+    def update_model(employee: EmployeeAccount, model: EmployeeModel) -> None:
         if model.id != employee.id.value:
             raise ValueError("Employee ID does not match model ID")
 
