@@ -35,3 +35,13 @@ class OutboxMessageModel(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+    delivery_attempts: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    next_attempt_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
