@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from identity.infrastructure.config import get_database_settings
 from identity.infrastructure.persistence.models import Base
 
-
 config = context.config
 target_metadata = Base.metadata
 

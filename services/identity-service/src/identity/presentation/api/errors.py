@@ -10,15 +10,17 @@ from identity.application.exceptions import (
     EmployeeIsNotInvitedError,
     EmployeeNotActiveError,
     EmployeeNotFoundError,
-    InvitationCannotBeReissuedError,
-    InvitationNotFoundError,
     InvalidCurrentPasswordError,
     InvalidEmailError,
     InvalidEmployeeStateError,
-    InvalidInvitationStatusError as ApplicationInvalidInvitationStatusError,
     InvalidPaginationError,
     InvalidPasswordError,
+    InvitationCannotBeReissuedError,
+    InvitationNotFoundError,
     LastActiveAdminError,
+)
+from identity.application.exceptions import (
+    InvalidInvitationStatusError as ApplicationInvalidInvitationStatusError,
 )
 from identity.domain.exceptions import (
     DomainException,

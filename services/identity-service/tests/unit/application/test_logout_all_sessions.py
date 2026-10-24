@@ -42,6 +42,8 @@ from tests.unit.application.doubles import UnitOfWorkFake
 from tests.unit.application.factories import make_employee, make_refresh_session
 from tests.unit.application.refresh_access_token_support import (
     OLD_TOKEN,
+)
+from tests.unit.application.refresh_access_token_support import (
     make_context as make_refresh_context,
 )
 from tests.unit.application.session_support import (
@@ -132,7 +134,7 @@ def test_revokes_all_own_sessions_and_preserves_other_employees_sessions(
     )
     assert context.uow.commit_count == 1
     assert context.uow.rollback_count == 0
-    message, = context.store.state.messages
+    (message,) = context.store.state.messages
     assert isinstance(message, AllSessionsLoggedOut)
     assert message.employee_id == context.employee.id.value
     assert message.revoked_sessions_count == 2
@@ -154,7 +156,8 @@ def test_expired_and_revoked_sessions_are_not_modified(
     assert expired.revoked_at is None
     assert revoked.revoked_at == revoked_at
     assert context.sessions.save.await_count == 2
-    message, = context.store.state.messages
+    (message,) = context.store.state.messages
+    assert isinstance(message, AllSessionsLoggedOut)
     assert message.revoked_sessions_count == 2
 
 

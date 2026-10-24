@@ -19,7 +19,9 @@ from identity.application.exceptions import (
     InvalidInvitationTokenError,
     InvitationDeliveryError,
 )
-from identity.application.messages.invitation_email_requested import InvitationEmailRequested
+from identity.application.messages.invitation_email_requested import (
+    InvitationEmailRequested,
+)
 from identity.domain.aggregates.invitation import Invitation
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus, InvitationStatus
@@ -78,6 +80,7 @@ def test_invitation_is_delivered_and_accepted_without_storing_plain_token() -> N
     )
 
     message = outbox.added[0]
+    assert isinstance(message, InvitationEmailRequested)
     invitation = invitations.added[0]
     sender = EmailSenderFake()
     deliver = DeliverInvitationEmail(

@@ -1,6 +1,4 @@
 from identity.application.authentication.authenticate_access_token import CurrentActor
-from identity.presentation.api.dependencies.repositories import RepositoryDependencies
-from identity.presentation.api.dependencies.types import Provider
 from identity.presentation.api.dependencies.invitation.acceptance import (
     create_invitation_acceptance_dependencies,
 )
@@ -11,6 +9,8 @@ from identity.presentation.api.dependencies.invitation.types import (
     InvitationApiServices,
     InvitationDependencies,
 )
+from identity.presentation.api.dependencies.repositories import RepositoryDependencies
+from identity.presentation.api.dependencies.types import Provider
 
 
 def create_invitation_dependencies(

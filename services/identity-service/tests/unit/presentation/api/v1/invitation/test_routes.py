@@ -34,6 +34,8 @@ def test_invite_employee_creates_invitation_without_exposing_token() -> None:
     )
 
     assert status_code == 201
+    assert body is not None
+    assert session.invited_employee is not None
     assert UUID(body["invitation_id"]) == session.invitations[0].id
     assert UUID(body["employee_id"]) == session.invited_employee.id
     assert set(body) == {"invitation_id", "employee_id"}
@@ -75,6 +77,8 @@ def test_accept_invitation_activates_employee_without_authentication() -> None:
         body={"email": "new@example.com", "roles": ["AUDITOR"]},
         token="valid-access-token",
     )
+    assert issued is not None
+    assert session.invited_employee is not None
     invitation_tokens = HmacInvitationTokens(
         signing_key=b"test-invitation-signing-key-32-bytes",
         lifetime=timedelta(days=7),
@@ -126,6 +130,8 @@ def test_accept_invitation_reports_expired_token() -> None:
         body={"email": "new@example.com", "roles": ["AUDITOR"]},
         token="valid-access-token",
     )
+    assert issued is not None
+    assert session.invited_employee is not None
     session.invitations[0].created_at = NOW - timedelta(days=8)
     session.invitations[0].expires_at = NOW - timedelta(days=1)
     invitation_tokens = HmacInvitationTokens(
@@ -158,6 +164,7 @@ def test_revoke_invitation_marks_it_revoked() -> None:
         body={"email": "new@example.com", "roles": ["AUDITOR"]},
         token="valid-access-token",
     )
+    assert issued is not None
 
     status_code, body = request(
         app,
@@ -181,6 +188,7 @@ def test_reissue_invitation_returns_new_id_without_token() -> None:
         body={"email": "new@example.com", "roles": ["AUDITOR"]},
         token="valid-access-token",
     )
+    assert issued is not None
 
     status_code, body = request(
         app,
@@ -190,6 +198,7 @@ def test_reissue_invitation_returns_new_id_without_token() -> None:
         token="valid-access-token",
     )
     assert status_code == 201
+    assert body is not None
     assert body["invitation_id"] != issued["invitation_id"]
     assert set(body) == {"invitation_id", "inviter_id", "employee_id"}
     assert session.invitations[0].status is InvitationStatus.REVOKED

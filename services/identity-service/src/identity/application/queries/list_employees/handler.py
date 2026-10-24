@@ -4,7 +4,9 @@ from identity.application.exceptions import (
     EmployeeNotActiveError,
     InvalidPaginationError,
 )
-from identity.application.ports.repositories.employee_repository import EmployeeRepository
+from identity.application.ports.repositories.employee_repository import (
+    EmployeeRepository,
+)
 from identity.application.ports.unit_of_work import UnitOfWork
 from identity.application.queries.list_employees.query import ListEmployeesQuery
 from identity.application.queries.list_employees.result import (

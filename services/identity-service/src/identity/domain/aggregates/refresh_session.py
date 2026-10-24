@@ -1,11 +1,11 @@
 from datetime import datetime
 
 from identity.domain.exceptions import RefreshSessionError
+from identity.domain.value_objects.employee_id import EmployeeId
 from identity.domain.value_objects.refresh_session import (
     RefreshSessionId,
     RefreshTokenHash,
 )
-from identity.domain.value_objects.employee_id import EmployeeId
 
 
 class RefreshSession:

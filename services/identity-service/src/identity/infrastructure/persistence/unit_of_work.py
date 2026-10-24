@@ -8,7 +8,7 @@ class SqlAlchemyUnitOfWork:
         self._session = session
         self._committed = False
 
-    async def __aenter__(self) -> "SqlAlchemyUnitOfWork":
+    async def __aenter__(self) -> "SqlAlchemyUnitOfWork":  # noqa: PYI034
         self._committed = False
         return self
 

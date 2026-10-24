@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
+from typing import cast
 
 import jwt
 import pytest
@@ -296,10 +297,10 @@ def test_refresh_verifier_rejects_malformed_signed_claims(
 @pytest.mark.parametrize("key", [b"short", "short", b""])
 def test_signing_key_must_be_strong(key: bytes | str) -> None:
     with pytest.raises(ValueError):
-        JwtAccessTokens(key, timedelta(minutes=15), ISSUER, ACCESS_AUDIENCE)
+        JwtAccessTokens(cast(bytes, key), timedelta(minutes=15), ISSUER, ACCESS_AUDIENCE)
     with pytest.raises(ValueError):
         JwtRefreshTokens(
-            key,
+            cast(bytes, key),
             timedelta(days=30),
             ISSUER,
             REFRESH_AUDIENCE,

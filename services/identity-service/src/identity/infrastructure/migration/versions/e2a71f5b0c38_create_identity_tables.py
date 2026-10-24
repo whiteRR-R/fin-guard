@@ -1,9 +1,8 @@
 """Create employee, invitation, and session tables."""
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
-
 
 revision: str = "e2a71f5b0c38"
 down_revision: str | None = "b7c84a19d5e2"

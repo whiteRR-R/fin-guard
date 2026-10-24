@@ -98,7 +98,7 @@ class JwtRefreshTokens:
             if not isinstance(payload["sid"], str) or not isinstance(
                 payload["jti"], str
             ):
-                raise ValueError("Invalid token identifier")
+                raise ValueError("Invalid token identifier")  # noqa: TRY004
 
             UUID(payload["jti"])
             return RefreshTokenClaims(

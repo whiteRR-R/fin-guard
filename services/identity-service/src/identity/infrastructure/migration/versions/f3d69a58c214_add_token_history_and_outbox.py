@@ -1,9 +1,8 @@
 """Add used refresh token history and outbox messages."""
 
-from alembic import op
 import sqlalchemy as sa
+from alembic import op
 from sqlalchemy.dialects import postgresql
-
 
 revision: str = "f3d69a58c214"
 down_revision: str | None = "e2a71f5b0c38"

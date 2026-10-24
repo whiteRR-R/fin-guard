@@ -8,4 +8,4 @@ from identity.domain.enums.role import EmployeeRole
 class InviteEmployeeCommand:
     inviter_id: UUID
     employee_email: str
-    employee_roles: tuple[EmployeeRole]
+    employee_roles: tuple[EmployeeRole, ...]

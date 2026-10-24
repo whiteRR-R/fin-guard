@@ -2,8 +2,12 @@ import asyncio
 
 import pytest
 
-from identity.application.commands.unblock_employee.command import UnblockEmployeeCommand
-from identity.application.commands.unblock_employee.handler import UnblockEmployeeHandler
+from identity.application.commands.unblock_employee.command import (
+    UnblockEmployeeCommand,
+)
+from identity.application.commands.unblock_employee.handler import (
+    UnblockEmployeeHandler,
+)
 from identity.application.exceptions import AccessDeniedError, AuthenticationError
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus

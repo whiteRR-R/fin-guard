@@ -5,18 +5,28 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from identity.application.commands.invite_employee.handler import InviteEmployeeHandler
-from identity.application.commands.reissue_invitation.handler import ReissueInvitationHandler
-from identity.application.commands.revoke_invitation.handler import RevokeInvitationHandler
+from identity.application.commands.reissue_invitation.handler import (
+    ReissueInvitationHandler,
+)
+from identity.application.commands.revoke_invitation.handler import (
+    RevokeInvitationHandler,
+)
 from identity.domain.policies.employee_invite import EmployeeInvitePolicy
-from identity.infrastructure.persistence.repositories.employee_repository import EmployeeRepository
+from identity.infrastructure.persistence.repositories.employee_repository import (
+    EmployeeRepository,
+)
 from identity.infrastructure.persistence.repositories.invitation_repository import (
     InvitationRepository,
 )
-from identity.infrastructure.persistence.repositories.outbox_repository import OutboxRepository
+from identity.infrastructure.persistence.repositories.outbox_repository import (
+    OutboxRepository,
+)
 from identity.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
+from identity.presentation.api.dependencies.invitation.types import (
+    InvitationApiServices,
+)
 from identity.presentation.api.dependencies.repositories import RepositoryDependencies
 from identity.presentation.api.dependencies.types import Provider
-from identity.presentation.api.dependencies.invitation.types import InvitationApiServices
 
 
 @dataclass(frozen=True)

@@ -12,7 +12,9 @@ from identity.application.commands.revoke_own_session.handler import (
 from identity.application.messages.base import OutboxMessage
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.outbox_repository import OutboxRepository
-from identity.application.queries.list_own_sessions.handler import ListOwnSessionsHandler
+from identity.application.queries.list_own_sessions.handler import (
+    ListOwnSessionsHandler,
+)
 from identity.application.queries.list_own_sessions.query import ListOwnSessionsQuery
 from identity.application.queries.list_own_sessions.result import ListOwnSessionsResult
 from identity.domain.aggregates.employee_account import EmployeeAccount

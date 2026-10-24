@@ -40,7 +40,7 @@ class RoleChangeUnitOfWork:
     def state(self) -> RoleChangeState:
         return self._pending if self._pending is not None else self.store.state
 
-    async def __aenter__(self) -> "RoleChangeUnitOfWork":
+    async def __aenter__(self) -> "RoleChangeUnitOfWork":  # noqa: PYI034
         self._committed = False
         return self
 

@@ -1,4 +1,6 @@
-from identity.application.commands.unblock_employee.command import UnblockEmployeeCommand
+from identity.application.commands.unblock_employee.command import (
+    UnblockEmployeeCommand,
+)
 from identity.application.commands.unblock_employee.result import UnblockEmployeeResult
 from identity.application.exceptions import (
     AccessDeniedError,

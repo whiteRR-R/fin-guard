@@ -386,7 +386,7 @@ def test_parallel_admin_revocations_leave_one_active_admin() -> None:
     async def run_concurrently() -> list[None | BaseException]:
         first_handler = make_revoke_handler(make_context(store))
         second_handler = make_revoke_handler(make_context(store))
-        return await asyncio.gather(
+        results = await asyncio.gather(
             first_handler.execute(
                 RevokeRoleCommand(first.id.value, first.id.value, EmployeeRole.ADMIN)
             ),
@@ -395,6 +395,7 @@ def test_parallel_admin_revocations_leave_one_active_admin() -> None:
             ),
             return_exceptions=True,
         )
+        return list(results)
 
     results = asyncio.run(run_concurrently())
 

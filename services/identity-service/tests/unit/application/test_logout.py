@@ -41,6 +41,8 @@ from tests.unit.application.doubles import UnitOfWorkFake
 from tests.unit.application.factories import make_employee, make_refresh_session
 from tests.unit.application.refresh_access_token_support import (
     OLD_TOKEN,
+)
+from tests.unit.application.refresh_access_token_support import (
     make_context as make_refresh_context,
 )
 from tests.unit.application.session_support import (

@@ -1,7 +1,14 @@
-from identity.application.exceptions import EmployeeNotActiveError, EmployeeNotFoundError
-from identity.application.ports.repositories.employee_repository import EmployeeRepository
+from identity.application.exceptions import (
+    EmployeeNotActiveError,
+    EmployeeNotFoundError,
+)
+from identity.application.ports.repositories.employee_repository import (
+    EmployeeRepository,
+)
 from identity.application.ports.unit_of_work import UnitOfWork
-from identity.application.queries.get_current_employee.query import GetCurrentEmployeeQuery
+from identity.application.queries.get_current_employee.query import (
+    GetCurrentEmployeeQuery,
+)
 from identity.application.queries.get_current_employee.result import EmployeeInfoResult
 from identity.domain.enums.status import EmployeeStatus
 from identity.domain.value_objects.employee_id import EmployeeId

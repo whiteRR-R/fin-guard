@@ -41,6 +41,8 @@ from tests.unit.application.own_sessions_support import (
 )
 from tests.unit.application.refresh_access_token_support import (
     OLD_TOKEN,
+)
+from tests.unit.application.refresh_access_token_support import (
     make_context as make_refresh_context,
 )
 

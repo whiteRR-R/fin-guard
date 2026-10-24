@@ -51,7 +51,7 @@ class OnboardingUnitOfWork:
     def state(self) -> OnboardingState:
         return self._pending if self._pending is not None else self.store.state
 
-    async def __aenter__(self) -> "OnboardingUnitOfWork":
+    async def __aenter__(self) -> "OnboardingUnitOfWork":  # noqa: PYI034
         self._entered = True
         self._committed = False
         return self

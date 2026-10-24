@@ -7,13 +7,13 @@ from identity.presentation.api.dependencies.employee.authentication import (
 from identity.presentation.api.dependencies.employee.profile import (
     create_profile_dependencies,
 )
-from identity.presentation.api.dependencies.repositories import (
-    RepositoryDependencies,
-    create_repository_dependencies,
-)
 from identity.presentation.api.dependencies.employee.types import (
     EmployeeApiServices,
     EmployeeDependencies,
+)
+from identity.presentation.api.dependencies.repositories import (
+    RepositoryDependencies,
+    create_repository_dependencies,
 )
 
 

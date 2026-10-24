@@ -6,7 +6,9 @@ from uuid import uuid4
 from sqlalchemy.dialects import postgresql
 
 from identity.application.messages.employee_role_assigned import EmployeeRoleAssigned
-from identity.application.messages.invitation_email_requested import InvitationEmailRequested
+from identity.application.messages.invitation_email_requested import (
+    InvitationEmailRequested,
+)
 from identity.domain.aggregates.employee_account import EmployeeAccount
 from identity.domain.aggregates.invitation import Invitation
 from identity.domain.aggregates.refresh_session import RefreshSession
@@ -17,9 +19,16 @@ from identity.domain.value_objects.employee_id import EmployeeId
 from identity.domain.value_objects.invitation_id import InvitationId
 from identity.domain.value_objects.invitation_token_hash import InvitationTokenHash
 from identity.domain.value_objects.password import HashedPassword
-from identity.domain.value_objects.refresh_session import RefreshSessionId, RefreshTokenHash
-from identity.infrastructure.persistence.data_mapper.employee_mapper import EmployeeMapper
-from identity.infrastructure.persistence.data_mapper.invitation_mapper import InvitationMapper
+from identity.domain.value_objects.refresh_session import (
+    RefreshSessionId,
+    RefreshTokenHash,
+)
+from identity.infrastructure.persistence.data_mapper.employee_mapper import (
+    EmployeeMapper,
+)
+from identity.infrastructure.persistence.data_mapper.invitation_mapper import (
+    InvitationMapper,
+)
 from identity.infrastructure.persistence.data_mapper.refresh_session_mapper import (
     RefreshSessionMapper,
 )
@@ -35,7 +44,9 @@ from identity.infrastructure.persistence.repositories.employee_repository import
 from identity.infrastructure.persistence.repositories.invitation_repository import (
     InvitationRepository,
 )
-from identity.infrastructure.persistence.repositories.outbox_repository import OutboxRepository
+from identity.infrastructure.persistence.repositories.outbox_repository import (
+    OutboxRepository,
+)
 from identity.infrastructure.persistence.repositories.refresh_session_repository import (
     RefreshSessionRepository,
 )
@@ -112,10 +123,13 @@ def test_invitation_mapper_round_trip_and_latest_query():
     repository_session.get.return_value = model
     repository_session.scalar.return_value = model
     repository = InvitationRepository(repository_session)
-    assert asyncio.run(repository.get_by_id(invitation.id)).id == invitation.id
+    by_id = asyncio.run(repository.get_by_id(invitation.id))
+    assert by_id is not None
+    assert by_id.id == invitation.id
     result = asyncio.run(
         repository.get_latest_by_employee_email_with_lock(Email("user@example.com"))
     )
+    assert result is not None
     assert result.id == invitation.id
     statement = repository_session.scalar.call_args.args[0]
     assert "lower(invitation.invited_email)" in _sql(statement)

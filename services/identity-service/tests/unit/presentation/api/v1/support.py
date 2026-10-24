@@ -1,8 +1,10 @@
 import asyncio
 from datetime import datetime, timedelta, timezone
+from typing import cast
 from uuid import uuid4
 
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from identity.application.ports.security.access_token_issuer import IssuedAccessToken
 from identity.application.ports.security.access_token_verifier import AccessTokenClaims
@@ -19,7 +21,6 @@ from identity.infrastructure.persistence.models.employee import EmployeeModel
 from identity.infrastructure.persistence.models.session import SessionModel
 from identity.infrastructure.security.hmac_invitation_tokens import HmacInvitationTokens
 from identity.main import create_app
-
 
 NOW = datetime(2026, 10, 21, 12, 0, tzinfo=timezone.utc)
 EMPLOYEE_ID = EmployeeId(uuid4())
@@ -41,7 +42,13 @@ class AccessTokens:
             expires_at=NOW + timedelta(minutes=15),
         )
 
-    def issue(self, **kwargs) -> IssuedAccessToken:
+    def issue(
+        self,
+        employee_id: EmployeeId,
+        session_id: RefreshSessionId,
+        roles: frozenset[EmployeeRole],
+        issued_at: datetime,
+    ) -> IssuedAccessToken:
         return IssuedAccessToken(
             plain_token="issued-access-token",
             expires_at=NOW + timedelta(minutes=15),
@@ -125,7 +132,7 @@ def make_app(session: FakeSession):
         lifetime=timedelta(days=7),
     )
     return create_app(
-        session_factory=lambda: session,
+        session_factory=cast(async_sessionmaker[AsyncSession], lambda: session),
         clock=FixedClock(),
         password_hasher=PasswordHasher(),
         access_token_issuer=access_tokens,

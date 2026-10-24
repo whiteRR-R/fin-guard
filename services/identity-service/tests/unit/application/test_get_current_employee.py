@@ -2,11 +2,16 @@ import asyncio
 
 import pytest
 
-from identity.application.exceptions import EmployeeNotActiveError, EmployeeNotFoundError
+from identity.application.exceptions import (
+    EmployeeNotActiveError,
+    EmployeeNotFoundError,
+)
 from identity.application.queries.get_current_employee.handler import (
     GetCurrentEmployeeHandler,
 )
-from identity.application.queries.get_current_employee.query import GetCurrentEmployeeQuery
+from identity.application.queries.get_current_employee.query import (
+    GetCurrentEmployeeQuery,
+)
 from identity.domain.aggregates.employee_account import EmployeeAccount
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus

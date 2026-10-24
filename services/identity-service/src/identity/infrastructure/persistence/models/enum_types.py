@@ -5,7 +5,6 @@ from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus, InvitationStatus
 from identity.infrastructure.persistence.models.base import Base
 
-
 employee_role_type = Enum(
     EmployeeRole,
     name="employee_role",

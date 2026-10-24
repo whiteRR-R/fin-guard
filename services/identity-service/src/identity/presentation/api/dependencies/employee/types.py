@@ -27,6 +27,7 @@ from identity.application.queries.get_employee.handler import GetEmployeeHandler
 from identity.application.queries.list_employees.handler import ListEmployeesHandler
 from identity.presentation.api.dependencies.types import Provider
 
+
 @dataclass(frozen=True)
 class EmployeeApiServices:
     session_factory: async_sessionmaker[AsyncSession]

@@ -28,7 +28,10 @@ from identity.domain.value_objects.employee_id import EmployeeId
 from identity.domain.value_objects.invitation_id import InvitationId
 from identity.domain.value_objects.invitation_token_hash import InvitationTokenHash
 from identity.domain.value_objects.password import HashedPassword, Password
-from identity.domain.value_objects.refresh_session import RefreshSessionId
+from identity.domain.value_objects.refresh_session import (
+    RefreshSessionId,
+    RefreshTokenHash,
+)
 
 
 class FixedClock:
@@ -82,9 +85,9 @@ class EmployeeRepositoryFake:
         self.locked_ids.append(employee_id)
         return self._employees.get(employee_id)
 
-    async def get_by_id(self, id: EmployeeId) -> EmployeeAccount | None:
-        self.requested_ids.append(id)
-        return self._employees.get(id)
+    async def get_by_id(self, employee_id: EmployeeId) -> EmployeeAccount | None:
+        self.requested_ids.append(employee_id)
+        return self._employees.get(employee_id)
 
     async def get_by_email(self, email: Email) -> EmployeeAccount | None:
         self.requested_emails.append(email)
@@ -181,6 +184,22 @@ class RefreshSessionRepositoryFake:
         self.requested_employee_ids: list[EmployeeId] = []
         self.added: list[RefreshSession] = []
         self.saved: list[RefreshSession] = []
+        self.used_token_hashes: dict[RefreshSessionId, list[RefreshTokenHash]] = {}
+
+    async def get_by_id_with_lock(
+        self, session_id: RefreshSessionId
+    ) -> RefreshSession | None:
+        return await self.get_by_id(session_id)
+
+    async def list_used_refresh_token_hashes(
+        self, session_id: RefreshSessionId
+    ) -> tuple[RefreshTokenHash, ...]:
+        return tuple(self.used_token_hashes.get(session_id, ()))
+
+    async def add_used_refresh_token_hash(
+        self, session_id: RefreshSessionId, token_hash: RefreshTokenHash
+    ) -> None:
+        self.used_token_hashes.setdefault(session_id, []).append(token_hash)
 
     async def get_by_id(
         self,
@@ -200,6 +219,15 @@ class RefreshSessionRepositoryFake:
             if session.employee_id == employee_id and session.is_active(self._active_at)
         ]
 
+    async def list_active_by_employee_with_lock(
+        self, employee_id: EmployeeId, *, active_at: datetime
+    ) -> list[RefreshSession]:
+        return [
+            session
+            for session in self._sessions.values()
+            if session.employee_id == employee_id and session.is_active(active_at)
+        ]
+
     async def add(self, refresh_session: RefreshSession) -> None:
         self._sessions[refresh_session.id] = refresh_session
         self.added.append(refresh_session)
@@ -214,7 +242,7 @@ class UnitOfWorkFake:
         self.commit_count = 0
         self.rollback_count = 0
 
-    async def __aenter__(self) -> "UnitOfWorkFake":
+    async def __aenter__(self) -> "UnitOfWorkFake":  # noqa: PYI034
         return self
 
     async def __aexit__(
@@ -300,6 +328,9 @@ class InvitationTokenIssuerStub:
     ) -> IssuedInvitationToken:
         self.calls.append((invitation_id, issued_at))
         return self._result
+
+    def derive_token(self, invitation_id: InvitationId) -> str:
+        return self._result.plain_token
 
 
 class InvitationTokenVerifierStub:

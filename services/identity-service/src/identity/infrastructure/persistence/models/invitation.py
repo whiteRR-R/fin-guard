@@ -1,13 +1,16 @@
 from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import ARRAY, CheckConstraint, DateTime, Enum, ForeignKey, String
+from sqlalchemy import ARRAY, CheckConstraint, DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import InvitationStatus
 from identity.infrastructure.persistence.models.base import Base
-from identity.infrastructure.persistence.models.enum_types import employee_role_type, invitation_status_type
+from identity.infrastructure.persistence.models.enum_types import (
+    employee_role_type,
+    invitation_status_type,
+)
 
 
 class InvitationModel(Base):

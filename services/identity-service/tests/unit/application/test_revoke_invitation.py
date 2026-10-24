@@ -315,7 +315,8 @@ def test_accept_and_revoke_cannot_both_succeed(
             if revoke_first
             else (accept_operation, revoke_operation)
         )
-        return await asyncio.gather(*operations, return_exceptions=True)
+        results = await asyncio.gather(*operations, return_exceptions=True)
+        return list(results)
 
     results = asyncio.run(run_concurrently())
 

@@ -4,15 +4,21 @@ from typing import Annotated
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from identity.application.commands.accept_invitation.handler import AcceptInvitationHandler
-from identity.infrastructure.persistence.repositories.employee_repository import EmployeeRepository
+from identity.application.commands.accept_invitation.handler import (
+    AcceptInvitationHandler,
+)
+from identity.infrastructure.persistence.repositories.employee_repository import (
+    EmployeeRepository,
+)
 from identity.infrastructure.persistence.repositories.invitation_repository import (
     InvitationRepository,
 )
 from identity.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
+from identity.presentation.api.dependencies.invitation.types import (
+    InvitationApiServices,
+)
 from identity.presentation.api.dependencies.repositories import RepositoryDependencies
 from identity.presentation.api.dependencies.types import Provider
-from identity.presentation.api.dependencies.invitation.types import InvitationApiServices
 
 
 @dataclass(frozen=True)

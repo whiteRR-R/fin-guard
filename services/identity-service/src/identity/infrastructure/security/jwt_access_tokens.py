@@ -104,7 +104,7 @@ class JwtAccessTokens:
             if not isinstance(payload["sub"], str) or not isinstance(
                 payload["sid"], str
             ):
-                raise ValueError("Invalid token subject")
+                raise ValueError("Invalid token subject")  # noqa: TRY004
 
             role_values = payload["roles"]
             if not isinstance(role_values, list) or not role_values:

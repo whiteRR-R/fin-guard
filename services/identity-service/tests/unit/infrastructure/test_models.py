@@ -19,20 +19,28 @@ from identity.infrastructure.persistence.models.enum_types import employee_role_
 def test_models_import_and_configure() -> None:
     configure_mappers()
 
-    assert Base.metadata.tables["employee"] is EmployeeModel.__table__
-    assert Base.metadata.tables["invitation"] is InvitationModel.__table__
+    employee_table = Base.metadata.tables["employee"]
+    invitation_table = Base.metadata.tables["invitation"]
+    assert employee_table is EmployeeModel.__table__
+    assert invitation_table is InvitationModel.__table__
     assert Base.metadata.tables["session"] is SessionModel.__table__
     assert Base.metadata.tables["used_refresh_token"] is UsedRefreshTokenModel.__table__
     assert Base.metadata.tables["outbox_message"] is OutboxMessageModel.__table__
     assert EmployeeModel.sessions.property.uselist is True
     assert SessionModel.employee.property.uselist is False
-    assert EmployeeModel.__table__.c.roles.type.item_type is employee_role_type
-    assert InvitationModel.__table__.c.roles.type.item_type is employee_role_type
-    assert InvitationModel.__table__.c.status.type.enum_class is InvitationStatus
+    employee_roles_type = employee_table.c.roles.type
+    invitation_roles_type = invitation_table.c.roles.type
+    invitation_status_type = invitation_table.c.status.type
+    assert isinstance(employee_roles_type, ARRAY)
+    assert isinstance(invitation_roles_type, ARRAY)
+    assert isinstance(invitation_status_type, Enum)
+    assert employee_roles_type.item_type is employee_role_type
+    assert invitation_roles_type.item_type is employee_role_type
+    assert invitation_status_type.enum_class is InvitationStatus
 
 
 def test_used_refresh_token_history_is_unique_per_session() -> None:
-    table = UsedRefreshTokenModel.__table__
+    table = Base.metadata.tables["used_refresh_token"]
 
     assert list(table.primary_key.columns.keys()) == ["session_id", "token_hash"]
     assert next(iter(table.c.session_id.foreign_keys)).target_fullname == "session.id"
@@ -41,7 +49,7 @@ def test_used_refresh_token_history_is_unique_per_session() -> None:
 
 
 def test_outbox_message_has_json_payload_and_pending_index() -> None:
-    table = OutboxMessageModel.__table__
+    table = Base.metadata.tables["outbox_message"]
     index = next(index for index in table.indexes if index.name == "ix_outbox_message_pending_created_at")
 
     assert table.c.payload.type.__class__ is postgresql.JSONB

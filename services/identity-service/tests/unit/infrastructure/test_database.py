@@ -19,7 +19,6 @@ from identity.infrastructure.persistence.database import (
     create_session_factory,
 )
 
-
 MIGRATION_CONFIG = (
     Path(__file__).resolve().parents[3]
     / "src/identity/infrastructure/migration/migration.ini"
@@ -74,7 +73,7 @@ def test_database_settings_require_url(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("DATABASE_URL", raising=False)
 
     with pytest.raises(ValidationError, match="Field required"):
-        DatabaseSettings(_env_file=None)
+        DatabaseSettings(_env_file=None)  # pyright: ignore[reportCallIssue]
 
 
 def test_database_settings_read_dotenv(
@@ -87,7 +86,7 @@ def test_database_settings_read_dotenv(
         "DATABASE_URL=postgresql+asyncpg://user:secret@localhost/identity\n"
     )
 
-    settings = DatabaseSettings(_env_file=dotenv_file)
+    settings = DatabaseSettings(_env_file=dotenv_file)  # pyright: ignore[reportCallIssue]
 
     assert settings.database_url.get_secret_value() == (
         "postgresql+asyncpg://user:secret@localhost/identity"
@@ -145,7 +144,9 @@ def test_alembic_upgrade_and_downgrade_with_shared_connection(
 def test_root_alembic_config_finds_migrations() -> None:
     config = Config(str(ROOT_MIGRATION_CONFIG))
 
-    assert Path(config.get_main_option("script_location")).is_dir()
+    script_location = config.get_main_option("script_location")
+    assert script_location is not None
+    assert Path(script_location).is_dir()
     assert ScriptDirectory.from_config(config).get_current_head() == "f3d69a58c214"
 
 

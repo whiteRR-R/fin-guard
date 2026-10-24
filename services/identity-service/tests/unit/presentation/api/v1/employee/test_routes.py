@@ -1,4 +1,5 @@
 from identity.domain.enums.role import EmployeeRole
+from identity.infrastructure.persistence.models.outbox_message import OutboxMessageModel
 from tests.unit.presentation.api.v1.support import (
     EMPLOYEE_ID,
     NOW,
@@ -27,6 +28,7 @@ def test_current_employee_returns_authenticated_employee() -> None:
         token="valid-access-token",
     )
     assert status_code == 200
+    assert body is not None
     assert body["employee_id"] == str(EMPLOYEE_ID.value)
     assert body["email"] == "employee@example.com"
     assert body["roles"] == ["ADMIN"]
@@ -42,6 +44,7 @@ def test_login_issues_tokens_and_commits_session() -> None:
         body={"email": "employee@example.com", "password": "valid-password-long"},
     )
     assert status_code == 200
+    assert body is not None
     assert body["access_token"] == "issued-access-token"
     assert body["refresh_token"] == "issued-refresh-token"
     assert body["token_type"] == "bearer"
@@ -89,6 +92,7 @@ def test_assign_role_commits_employee_and_outbox() -> None:
     assert EmployeeRole.AUDITOR in session.employee.roles
     assert session.commits == 1
     assert len(session.added) == 1
+    assert isinstance(session.added[0], OutboxMessageModel)
     assert session.added[0].message_type == "EmployeeRoleAssigned"
     assert session.entries == 1
 

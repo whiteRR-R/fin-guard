@@ -20,7 +20,9 @@ from identity.application.messages.refresh_token_reuse_detected import (
     RefreshTokenReuseDetected,
 )
 from identity.application.ports.security.refresh_token_issuer import IssuedRefreshToken
-from identity.application.ports.security.refresh_token_verifier import RefreshTokenClaims
+from identity.application.ports.security.refresh_token_verifier import (
+    RefreshTokenClaims,
+)
 from identity.domain.aggregates.refresh_session import RefreshSession
 from identity.domain.enums.status import EmployeeStatus
 from identity.domain.value_objects.refresh_session import RefreshSessionId

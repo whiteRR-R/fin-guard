@@ -40,7 +40,7 @@ class TransactionalUnitOfWork:
         self._committed = False
         self._entered = False
 
-    async def __aenter__(self) -> "TransactionalUnitOfWork":
+    async def __aenter__(self) -> "TransactionalUnitOfWork":  # noqa: PYI034
         self._entered = True
         self._committed = False
         return self

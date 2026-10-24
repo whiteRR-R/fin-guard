@@ -203,11 +203,12 @@ def test_concurrent_bootstraps_create_only_one_admin(store: OnboardingStore) -> 
     async def run_concurrently() -> list[BootstrapFirstAdminResult | BaseException]:
         first, _ = make_handler(make_context(store))
         second, _ = make_handler(make_context(store))
-        return await asyncio.gather(
+        results = await asyncio.gather(
             first.execute(BootstrapFirstAdminCommand("first@example.com", PASSWORD)),
             second.execute(BootstrapFirstAdminCommand("second@example.com", PASSWORD)),
             return_exceptions=True,
         )
+        return list(results)
 
     results = asyncio.run(run_concurrently())
 

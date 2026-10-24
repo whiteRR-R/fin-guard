@@ -3,7 +3,7 @@ from typing import Protocol
 
 
 class UnitOfWork(Protocol):
-    async def __aenter__(self) -> "UnitOfWork": ...
+    async def __aenter__(self) -> "UnitOfWork": ...  # noqa: PYI034
 
     async def __aexit__(
         self,

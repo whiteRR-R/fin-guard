@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy import ARRAY, Enum, Index, String, func
+from sqlalchemy import ARRAY, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from identity.domain.enums.role import EmployeeRole

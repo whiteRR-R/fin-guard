@@ -1,9 +1,9 @@
 from dataclasses import dataclass
 
+from identity.domain.enums.role import EmployeeRole
 from identity.domain.events.base import DomainEvent
 from identity.domain.value_objects.email import Email
 from identity.domain.value_objects.employee_id import EmployeeId
-from identity.domain.enums.role import EmployeeRole
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)

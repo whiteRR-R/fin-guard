@@ -1,6 +1,9 @@
 from identity.domain.aggregates.refresh_session import RefreshSession
 from identity.domain.value_objects.employee_id import EmployeeId
-from identity.domain.value_objects.refresh_session import RefreshSessionId, RefreshTokenHash
+from identity.domain.value_objects.refresh_session import (
+    RefreshSessionId,
+    RefreshTokenHash,
+)
 from identity.infrastructure.persistence.models.session import SessionModel
 
 
