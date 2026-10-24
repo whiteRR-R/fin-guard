@@ -25,12 +25,12 @@ class InvitationRepository:
     async def get_by_id_with_lock(
         self, invitation_id: InvitationId
     ) -> Invitation | None:
-        query = (
+        statement = (
             select(InvitationModel)
             .where(InvitationModel.id == invitation_id.value)
             .with_for_update()
         )
-        model = await self._session.scalar(query)
+        model = await self._session.scalar(statement)
 
         if model is None:
             return None
@@ -63,12 +63,12 @@ class InvitationRepository:
         self._session.add(InvitationMapper.to_model(invitation))
 
     async def save(self, invitation: Invitation) -> None:
-        query = (
+        statement = (
             select(InvitationModel)
             .where(InvitationModel.id == invitation.id.value)
             .with_for_update()
         )
-        model = await self._session.scalar(query)
+        model = await self._session.scalar(statement)
 
         if model is None:
             raise LookupError("Invitation not found")
