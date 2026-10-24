@@ -7,7 +7,8 @@ from identity.presentation.api.dependencies.employee.authentication import (
 from identity.presentation.api.dependencies.employee.profile import (
     create_profile_dependencies,
 )
-from identity.presentation.api.dependencies.employee.repositories import (
+from identity.presentation.api.dependencies.repositories import (
+    RepositoryDependencies,
     create_repository_dependencies,
 )
 from identity.presentation.api.dependencies.employee.types import (
@@ -16,8 +17,12 @@ from identity.presentation.api.dependencies.employee.types import (
 )
 
 
-def create_employee_dependencies(services: EmployeeApiServices) -> EmployeeDependencies:
-    repositories = create_repository_dependencies(services.session_factory)
+def create_employee_dependencies(
+    services: EmployeeApiServices,
+    repositories: RepositoryDependencies | None = None,
+) -> EmployeeDependencies:
+    if repositories is None:
+        repositories = create_repository_dependencies(services.session_factory)
     authentication = create_authentication_dependencies(services, repositories)
     profile = create_profile_dependencies(services, repositories)
     administration = create_administration_dependencies(services, repositories)

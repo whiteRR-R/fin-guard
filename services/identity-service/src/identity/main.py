@@ -6,12 +6,19 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from identity.application.ports.clock import Clock
 from identity.application.ports.security.access_token_issuer import AccessTokenIssuer
 from identity.application.ports.security.access_token_verifier import AccessTokenVerifier
+from identity.application.ports.security.invitation_token_issuer import InvitationTokenIssuer
+from identity.application.ports.security.invitation_token_verifier import InvitationTokenVerifier
 from identity.application.ports.security.password_hasher import PasswordHasher
 from identity.application.ports.security.refresh_token_issuer import RefreshTokenIssuer
 from identity.presentation.api.dependencies.employee.factory import (
     create_employee_dependencies,
 )
 from identity.presentation.api.dependencies.employee.types import EmployeeApiServices
+from identity.presentation.api.dependencies.invitation.factory import (
+    create_invitation_dependencies,
+)
+from identity.presentation.api.dependencies.invitation.types import InvitationApiServices
+from identity.presentation.api.dependencies.repositories import create_repository_dependencies
 from identity.presentation.api.errors import install_error_handlers
 from identity.presentation.api.v1.router import create_v1_router
 
@@ -25,9 +32,12 @@ def create_app(
     access_token_verifier: AccessTokenVerifier,
     refresh_token_issuer: RefreshTokenIssuer,
     refresh_token_lifetime: timedelta,
+    invitation_token_issuer: InvitationTokenIssuer,
+    invitation_token_verifier: InvitationTokenVerifier,
 ) -> FastAPI:
     app = FastAPI(title="FinGuard Identity Service")
     install_error_handlers(app)
+    repositories = create_repository_dependencies(session_factory)
     employee_dependencies = create_employee_dependencies(
         EmployeeApiServices(
             session_factory=session_factory,
@@ -37,7 +47,18 @@ def create_app(
             access_token_verifier=access_token_verifier,
             refresh_token_issuer=refresh_token_issuer,
             refresh_token_lifetime=refresh_token_lifetime,
-        )
+        ),
+        repositories,
     )
-    app.include_router(create_v1_router(employee_dependencies))
+    invitation_dependencies = create_invitation_dependencies(
+        services=InvitationApiServices(
+            clock=clock,
+            password_hasher=password_hasher,
+            token_issuer=invitation_token_issuer,
+            token_verifier=invitation_token_verifier,
+        ),
+        repositories=repositories,
+        actor=employee_dependencies.actor,
+    )
+    app.include_router(create_v1_router(employee_dependencies, invitation_dependencies))
     return app

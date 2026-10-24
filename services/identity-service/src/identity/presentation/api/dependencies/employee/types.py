@@ -1,7 +1,5 @@
-from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
 from datetime import timedelta
-from typing import TypeVar
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -27,11 +25,7 @@ from identity.application.queries.get_current_employee.handler import (
 )
 from identity.application.queries.get_employee.handler import GetEmployeeHandler
 from identity.application.queries.list_employees.handler import ListEmployeesHandler
-
-T = TypeVar("T")
-Provider = Callable[..., Awaitable[T]]
-SessionProvider = Callable[..., AsyncIterator[AsyncSession]]
-
+from identity.presentation.api.dependencies.types import Provider
 
 @dataclass(frozen=True)
 class EmployeeApiServices:

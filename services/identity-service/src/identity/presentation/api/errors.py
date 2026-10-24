@@ -10,9 +10,12 @@ from identity.application.exceptions import (
     EmployeeIsNotInvitedError,
     EmployeeNotActiveError,
     EmployeeNotFoundError,
+    InvitationCannotBeReissuedError,
+    InvitationNotFoundError,
     InvalidCurrentPasswordError,
     InvalidEmailError,
     InvalidEmployeeStateError,
+    InvalidInvitationStatusError as ApplicationInvalidInvitationStatusError,
     InvalidPaginationError,
     InvalidPasswordError,
     LastActiveAdminError,
@@ -20,6 +23,8 @@ from identity.application.exceptions import (
 from identity.domain.exceptions import (
     DomainException,
     EmailValidationError,
+    EmployeeInviteNotAllowedError,
+    InvitationExpiredError,
     PasswordValidationError,
 )
 
@@ -35,7 +40,7 @@ def install_error_handlers(app: FastAPI) -> None:
                 content={"detail": "Invalid credentials"},
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        if isinstance(error, EmployeeNotFoundError):
+        if isinstance(error, (EmployeeNotFoundError, InvitationNotFoundError)):
             status_code = 404
         elif isinstance(error, (AccessDeniedError, EmployeeNotActiveError)):
             status_code = 403
@@ -46,6 +51,8 @@ def install_error_handlers(app: FastAPI) -> None:
                 EmployeeAlreadyInvitedError,
                 EmployeeIsNotInvitedError,
                 InvalidEmployeeStateError,
+                ApplicationInvalidInvitationStatusError,
+                InvitationCannotBeReissuedError,
                 LastActiveAdminError,
             ),
         ):
@@ -66,9 +73,12 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(DomainException)
     async def domain_error(request: Request, error: DomainException) -> JSONResponse:
-        status_code = (
-            422
-            if isinstance(error, (EmailValidationError, PasswordValidationError))
-            else 409
-        )
+        if isinstance(error, (EmailValidationError, PasswordValidationError)):
+            status_code = 422
+        elif isinstance(error, EmployeeInviteNotAllowedError):
+            status_code = 403
+        elif isinstance(error, InvitationExpiredError):
+            status_code = 410
+        else:
+            status_code = 409
         return JSONResponse(status_code=status_code, content={"detail": str(error)})

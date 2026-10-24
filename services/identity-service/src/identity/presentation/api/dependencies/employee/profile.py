@@ -16,7 +16,7 @@ from identity.infrastructure.persistence.repositories.refresh_session_repository
     RefreshSessionRepository,
 )
 from identity.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWork
-from identity.presentation.api.dependencies.employee.repositories import (
+from identity.presentation.api.dependencies.repositories import (
     RepositoryDependencies,
 )
 from identity.presentation.api.dependencies.employee.types import (
