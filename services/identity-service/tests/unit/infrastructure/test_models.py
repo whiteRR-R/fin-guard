@@ -55,6 +55,8 @@ def test_outbox_message_has_json_payload_and_pending_index() -> None:
     assert table.c.payload.type.__class__ is postgresql.JSONB
     assert list(table.primary_key.columns.keys()) == ["message_id"]
     assert str(index.dialect_options["postgresql"]["where"]) == "published_at IS NULL"
+    assert table.c.delivery_attempts.server_default is not None
+    assert table.c.next_attempt_at.nullable
 
 
 @pytest.mark.parametrize(
