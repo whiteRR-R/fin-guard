@@ -8,29 +8,24 @@ from identity.application.commands.accept_invitation.command import (
 from identity.application.commands.accept_invitation.handler import (
     AcceptInvitationHandler,
 )
-from identity.presentation.api.dependencies.invitation.types import (
-    InvitationDependencies,
+from identity.presentation.api.dependencies.invitation.acceptance import (
+    get_accept_handler,
 )
 from identity.presentation.api.v1.schemas.invitation.acceptance import (
     AcceptInvitationRequest,
 )
 
+router = APIRouter(tags=["invitation acceptance"])
 
-def create_invitation_acceptance_router(
-    dependencies: InvitationDependencies,
-) -> APIRouter:
-    router = APIRouter(tags=["invitation acceptance"])
 
-    @router.post("/accept", status_code=status.HTTP_204_NO_CONTENT)
-    async def accept_invitation(
-        body: AcceptInvitationRequest,
-        handler: Annotated[AcceptInvitationHandler, Depends(dependencies.accept)],
-    ) -> None:
-        await handler.execute(
-            AcceptInvitationCommand(
-                token=body.token.get_secret_value(),
-                password=body.password.get_secret_value(),
-            )
+@router.post("/accept", status_code=status.HTTP_204_NO_CONTENT)
+async def accept_invitation(
+    body: AcceptInvitationRequest,
+    handler: Annotated[AcceptInvitationHandler, Depends(get_accept_handler)],
+) -> None:
+    await handler.execute(
+        AcceptInvitationCommand(
+            token=body.token.get_secret_value(),
+            password=body.password.get_secret_value(),
         )
-
-    return router
+    )

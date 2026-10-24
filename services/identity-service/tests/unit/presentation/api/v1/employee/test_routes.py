@@ -1,5 +1,11 @@
+from collections.abc import AsyncIterator
+from typing import cast
+
+from sqlalchemy.ext.asyncio import AsyncSession
+
 from identity.domain.enums.role import EmployeeRole
 from identity.infrastructure.persistence.models.outbox_message import OutboxMessageModel
+from identity.presentation.api.dependencies.repositories import get_session
 from tests.unit.presentation.api.v1.support import (
     EMPLOYEE_ID,
     NOW,
@@ -33,6 +39,48 @@ def test_current_employee_returns_authenticated_employee() -> None:
     assert body["email"] == "employee@example.com"
     assert body["roles"] == ["ADMIN"]
     assert session.entries == 1
+
+
+def test_session_override_is_shared_by_actor_and_handler() -> None:
+    original = FakeSession([EmployeeRole.ADMIN])
+    replacement = FakeSession([EmployeeRole.ADMIN])
+    replacement.employee.email = "replacement@example.com"
+    app = make_app(original)
+
+    async def override_session() -> AsyncIterator[AsyncSession]:
+        async with replacement:
+            yield cast(AsyncSession, replacement)
+
+    app.dependency_overrides[get_session] = override_session
+    status_code, body = request(
+        app,
+        "GET",
+        "/api/v1/employees/me",
+        token="valid-access-token",
+    )
+
+    assert status_code == 200
+    assert body is not None
+    assert body["email"] == "replacement@example.com"
+    assert original.entries == 0
+    assert replacement.entries == 1
+
+
+def test_apps_keep_separate_session_factories() -> None:
+    first_session = FakeSession([EmployeeRole.ADMIN])
+    second_session = FakeSession([EmployeeRole.ADMIN])
+    first_app = make_app(first_session)
+    second_app = make_app(second_session)
+
+    first_status, _ = request(
+        first_app, "GET", "/api/v1/employees/me", token="valid-access-token"
+    )
+    second_status, _ = request(
+        second_app, "GET", "/api/v1/employees/me", token="valid-access-token"
+    )
+
+    assert first_status == second_status == 200
+    assert first_session.entries == second_session.entries == 1
 
 
 def test_login_issues_tokens_and_commits_session() -> None:
