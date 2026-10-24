@@ -6,9 +6,13 @@ from uuid import uuid4
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from identity.application.exceptions import InvalidRefreshTokenError
 from identity.application.ports.security.access_token_issuer import IssuedAccessToken
 from identity.application.ports.security.access_token_verifier import AccessTokenClaims
 from identity.application.ports.security.refresh_token_issuer import IssuedRefreshToken
+from identity.application.ports.security.refresh_token_verifier import (
+    RefreshTokenClaims,
+)
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus
 from identity.domain.value_objects.employee_id import EmployeeId
@@ -19,6 +23,9 @@ from identity.domain.value_objects.refresh_session import (
 )
 from identity.infrastructure.persistence.models.employee import EmployeeModel
 from identity.infrastructure.persistence.models.session import SessionModel
+from identity.infrastructure.persistence.models.used_refresh_token import (
+    UsedRefreshTokenModel,
+)
 from identity.infrastructure.security.hmac_invitation_tokens import HmacInvitationTokens
 from identity.main import create_app
 
@@ -59,8 +66,22 @@ class RefreshTokens:
     def issue(self, session_id: RefreshSessionId) -> IssuedRefreshToken:
         return IssuedRefreshToken(
             plain_token="issued-refresh-token",
-            token_hash=RefreshTokenHash("refresh-token-hash"),
+            token_hash=RefreshTokenHash("issued-refresh-token-hash"),
         )
+
+    def verify(self, refresh_token: str) -> RefreshTokenClaims:
+        if refresh_token not in {"valid-refresh-token", "issued-refresh-token"}:
+            raise InvalidRefreshTokenError("Invalid refresh token")
+        return RefreshTokenClaims(
+            session_id=SESSION_ID,
+            expires_at=NOW + timedelta(days=1),
+        )
+
+    def matches_hash(self, refresh_token: str, hashed_token: RefreshTokenHash) -> bool:
+        return {
+            "valid-refresh-token": "refresh-token-hash",
+            "issued-refresh-token": "issued-refresh-token-hash",
+        }.get(refresh_token) == hashed_token.value
 
 
 class PasswordHasher:
@@ -108,7 +129,14 @@ class FakeSession:
         return None
 
     async def scalars(self, statement):
-        if statement.column_descriptions[0]["entity"] is SessionModel:
+        model = statement.column_descriptions[0]["entity"]
+        if model is UsedRefreshTokenModel:
+            return [
+                item.token_hash
+                for item in self.added
+                if isinstance(item, UsedRefreshTokenModel)
+            ]
+        if model is SessionModel:
             return [self.refresh_session]
         return [self.employee]
 
@@ -127,6 +155,7 @@ class FakeSession:
 
 def make_app(session: FakeSession):
     access_tokens = AccessTokens()
+    refresh_tokens = RefreshTokens()
     invitation_tokens = HmacInvitationTokens(
         signing_key=b"test-invitation-signing-key-32-bytes",
         lifetime=timedelta(days=7),
@@ -137,7 +166,8 @@ def make_app(session: FakeSession):
         password_hasher=PasswordHasher(),
         access_token_issuer=access_tokens,
         access_token_verifier=access_tokens,
-        refresh_token_issuer=RefreshTokens(),
+        refresh_token_issuer=refresh_tokens,
+        refresh_token_verifier=refresh_tokens,
         refresh_token_lifetime=timedelta(days=30),
         invitation_token_issuer=invitation_tokens,
         invitation_token_verifier=invitation_tokens,

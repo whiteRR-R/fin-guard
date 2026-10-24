@@ -18,6 +18,9 @@ from identity.application.ports.security.invitation_token_verifier import (
 )
 from identity.application.ports.security.password_hasher import PasswordHasher
 from identity.application.ports.security.refresh_token_issuer import RefreshTokenIssuer
+from identity.application.ports.security.refresh_token_verifier import (
+    RefreshTokenVerifier,
+)
 
 
 @dataclass(frozen=True)
@@ -28,6 +31,7 @@ class ApiServices:
     access_token_issuer: AccessTokenIssuer
     access_token_verifier: AccessTokenVerifier
     refresh_token_issuer: RefreshTokenIssuer
+    refresh_token_verifier: RefreshTokenVerifier
     refresh_token_lifetime: timedelta
     invitation_token_issuer: InvitationTokenIssuer
     invitation_token_verifier: InvitationTokenVerifier
@@ -61,6 +65,10 @@ async def get_refresh_token_issuer(request: Request) -> RefreshTokenIssuer:
     return _services(request).refresh_token_issuer
 
 
+async def get_refresh_token_verifier(request: Request) -> RefreshTokenVerifier:
+    return _services(request).refresh_token_verifier
+
+
 async def get_refresh_token_lifetime(request: Request) -> timedelta:
     return _services(request).refresh_token_lifetime
 
@@ -86,6 +94,9 @@ AccessTokenVerifierDependency = Annotated[
 ]
 RefreshTokenIssuerDependency = Annotated[
     RefreshTokenIssuer, Depends(get_refresh_token_issuer)
+]
+RefreshTokenVerifierDependency = Annotated[
+    RefreshTokenVerifier, Depends(get_refresh_token_verifier)
 ]
 RefreshTokenLifetimeDependency = Annotated[
     timedelta, Depends(get_refresh_token_lifetime)

@@ -18,6 +18,9 @@ from identity.application.ports.security.invitation_token_verifier import (
 )
 from identity.application.ports.security.password_hasher import PasswordHasher
 from identity.application.ports.security.refresh_token_issuer import RefreshTokenIssuer
+from identity.application.ports.security.refresh_token_verifier import (
+    RefreshTokenVerifier,
+)
 from identity.presentation.api.dependencies.services import ApiServices
 from identity.presentation.api.errors import install_error_handlers
 from identity.presentation.api.v1.router import router as v1_router
@@ -31,6 +34,7 @@ def create_app(
     access_token_issuer: AccessTokenIssuer,
     access_token_verifier: AccessTokenVerifier,
     refresh_token_issuer: RefreshTokenIssuer,
+    refresh_token_verifier: RefreshTokenVerifier,
     refresh_token_lifetime: timedelta,
     invitation_token_issuer: InvitationTokenIssuer,
     invitation_token_verifier: InvitationTokenVerifier,
@@ -45,6 +49,7 @@ def create_app(
         access_token_issuer=access_token_issuer,
         access_token_verifier=access_token_verifier,
         refresh_token_issuer=refresh_token_issuer,
+        refresh_token_verifier=refresh_token_verifier,
         refresh_token_lifetime=refresh_token_lifetime,
         invitation_token_issuer=invitation_token_issuer,
         invitation_token_verifier=invitation_token_verifier,

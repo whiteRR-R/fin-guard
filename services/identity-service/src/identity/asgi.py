@@ -75,6 +75,7 @@ def create_application() -> FastAPI:
         access_token_issuer=access_tokens,
         access_token_verifier=access_tokens,
         refresh_token_issuer=refresh_tokens,
+        refresh_token_verifier=refresh_tokens,
         refresh_token_lifetime=refresh_lifetime,
         invitation_token_issuer=invitation_tokens,
         invitation_token_verifier=invitation_tokens,

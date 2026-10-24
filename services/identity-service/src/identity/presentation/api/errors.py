@@ -18,6 +18,7 @@ from identity.application.exceptions import (
     InvitationCannotBeReissuedError,
     InvitationNotFoundError,
     LastActiveAdminError,
+    SessionNotFoundError,
 )
 from identity.application.exceptions import (
     InvalidInvitationStatusError as ApplicationInvalidInvitationStatusError,
@@ -42,7 +43,10 @@ def install_error_handlers(app: FastAPI) -> None:
                 content={"detail": "Invalid credentials"},
                 headers={"WWW-Authenticate": "Bearer"},
             )
-        if isinstance(error, (EmployeeNotFoundError, InvitationNotFoundError)):
+        if isinstance(
+            error,
+            (EmployeeNotFoundError, InvitationNotFoundError, SessionNotFoundError),
+        ):
             status_code = 404
         elif isinstance(error, (AccessDeniedError, EmployeeNotActiveError)):
             status_code = 403
