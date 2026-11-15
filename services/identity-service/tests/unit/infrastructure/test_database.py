@@ -160,16 +160,16 @@ def test_root_alembic_config_finds_migrations() -> None:
     script_location = config.get_main_option("script_location")
     assert script_location is not None
     assert Path(script_location).is_dir()
-    assert ScriptDirectory.from_config(config).get_current_head() == "8f6c3a9b14d2"
+    assert ScriptDirectory.from_config(config).get_current_head() == "c4e8d2a7f913"
 
 
 @pytest.mark.parametrize(
     ("database_url", "password"),
     [
-        ("postgresql+asyncpg://user:secret@localhost/identity", "secret"),
+        ("postgresql+asyncpg://user:db-pa55word@localhost/identity", "db-pa55word"),
         (
-            "postgresql+asyncpg://user:secret%25value%40host@localhost/identity",
-            "secret%value@host",
+            "postgresql+asyncpg://user:db-pa55word%25value%40host@localhost/identity",
+            "db-pa55word%value@host",
         ),
     ],
 )
@@ -188,9 +188,16 @@ def test_alembic_generates_postgresql_sql(
     assert "CREATE TABLE alembic_version" in output
     assert "f3d69a58c214" in output
     assert "8f6c3a9b14d2" in output
+    assert "c4e8d2a7f913" in output
     assert "ADD COLUMN delivery_attempts" in output
     assert "ADD COLUMN next_attempt_at" in output
-    for enum_type in ("employee_role", "employee_status", "invitation_status"):
+    for enum_type in (
+        "employee_role",
+        "employee_status",
+        "invitation_status",
+        "machine_scope",
+        "service_account_status",
+    ):
         assert f"CREATE TYPE {enum_type} AS ENUM" in output
     for table in (
         "employee",
@@ -198,6 +205,8 @@ def test_alembic_generates_postgresql_sql(
         "session",
         "used_refresh_token",
         "outbox_message",
+        "service_account",
+        "service_account_secret",
     ):
         assert f"CREATE TABLE {table} (" in output
     assert "CREATE UNIQUE INDEX uq_employee_email_lower" in output
@@ -205,7 +214,10 @@ def test_alembic_generates_postgresql_sql(
     assert "PRIMARY KEY (session_id, token_hash)" in output
     assert "payload JSONB NOT NULL" in output
     assert "WHERE published_at IS NULL" in output
-    assert "secret" not in output
+    assert "CREATE UNIQUE INDEX uq_service_account_secret_current" in output
+    assert "WHERE expires_at IS NULL AND revoked_at IS NULL" in output
+    assert "'transactions:write'" in output
+    assert "pa55word" not in output
     configured_url = config.get_main_option("sqlalchemy.url")
     assert configured_url is not None
     assert make_url(configured_url).password == password
