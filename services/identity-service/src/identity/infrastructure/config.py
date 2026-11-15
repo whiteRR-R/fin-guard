@@ -37,6 +37,20 @@ class TokenSettings(BaseSettings):
     invitation_token_lifetime_days: int = Field(default=7, gt=0)
 
 
+class ServiceAccountSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).resolve().parents[3] / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        frozen=True,
+        hide_input_in_errors=True,
+    )
+
+    client_secret_hash_key: SecretStr = Field(default=..., repr=False)
+    machine_token_lifetime_seconds: int = Field(default=900, gt=0, le=3600)
+    client_secret_rotation_grace_hours: int = Field(default=24, ge=0, le=168)
+
+
 class MailSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[3] / ".env",
