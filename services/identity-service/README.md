@@ -106,3 +106,23 @@ changed with `LOGIN_ATTEMPTS_PER_IP`, `LOGIN_IP_WINDOW_SECONDS`,
 Limits per IP rely on the real client address. Behind a reverse proxy, set
 `IDENTITY_FORWARDED_ALLOW_IPS` to the proxy address so the API trusts its
 `X-Forwarded-For` header; otherwise every request appears to come from the proxy.
+
+## Run with Docker
+
+Fill in `.env` from `.env.example`, then start the database, migrations, API and
+outbox worker:
+
+```sh
+docker compose up --build
+```
+
+`identity-migrate` applies migrations and exits; the API and the worker start
+only after it succeeds. The API listens on `IDENTITY_API_PORT` (default 8000).
+Inside containers the database host is `identity-database`, which compose sets
+in `DATABASE_URL` automatically. `SMTP_HOST=localhost` points at the worker
+container itself, so set it to a reachable mail server. Create the first
+administrator with:
+
+```sh
+docker compose run --rm identity-api python -m identity.cli create-admin --email admin@example.com
+```
