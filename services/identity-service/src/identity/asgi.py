@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from identity.infrastructure.clock import SystemClock
 from identity.infrastructure.config import (
+    RateLimitSettings,
     ServiceAccountSettings,
     TokenSettings,
     get_database_settings,
@@ -16,6 +17,9 @@ from identity.infrastructure.config import (
 from identity.infrastructure.persistence.database import (
     create_database_engine,
     create_session_factory,
+)
+from identity.infrastructure.rate_limit.postgres_rate_limiter import (
+    PostgresRateLimiter,
 )
 from identity.infrastructure.security.bcrypt_password_hasher import (
     BcryptPasswordHasher,
@@ -30,6 +34,7 @@ from identity.infrastructure.security.jwt_access_tokens import JwtAccessTokens
 from identity.infrastructure.security.jwt_machine_tokens import JwtMachineTokens
 from identity.infrastructure.security.jwt_refresh_tokens import JwtRefreshTokens
 from identity.main import create_app
+from identity.presentation.api.rate_limit import AuthenticationRateLimits
 
 
 @asynccontextmanager
@@ -112,6 +117,8 @@ def create_application() -> FastAPI:
         client_secret_grace_period=timedelta(
             hours=service_account_settings.client_secret_rotation_grace_hours
         ),
+        rate_limiter=PostgresRateLimiter(session_factory=session_factory, clock=clock),
+        rate_limits=AuthenticationRateLimits.from_settings(RateLimitSettings()),
         lifespan=lifespan,
     )
     app.state.identity_engine = engine

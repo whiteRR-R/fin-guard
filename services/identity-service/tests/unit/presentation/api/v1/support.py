@@ -26,12 +26,14 @@ from identity.infrastructure.persistence.models.session import SessionModel
 from identity.infrastructure.persistence.models.used_refresh_token import (
     UsedRefreshTokenModel,
 )
+from identity.infrastructure.rate_limit.limits import RateLimit, RateLimitExceededError
 from identity.infrastructure.security.hmac_client_credentials import (
     HmacClientCredentials,
 )
 from identity.infrastructure.security.hmac_invitation_tokens import HmacInvitationTokens
 from identity.infrastructure.security.jwt_machine_tokens import JwtMachineTokens
 from identity.main import create_app
+from identity.presentation.api.rate_limit import AuthenticationRateLimits
 
 NOW = datetime(2026, 10, 21, 12, 0, tzinfo=timezone.utc)
 EMPLOYEE_ID = EmployeeId(uuid4())
@@ -159,7 +161,48 @@ class FakeSession:
         pass
 
 
-def make_app(session: FakeSession):
+class InMemoryRateLimiter:
+    def __init__(self, clock=None) -> None:
+        self._clock = clock or FixedClock()
+        self.hits: dict[tuple[str, str, object], int] = {}
+
+    def _key(self, rate_limit: RateLimit, subject: str):
+        now = self._clock.now()
+        return (rate_limit.name, subject, rate_limit.window_start(now))
+
+    async def ensure_allowed(self, *checks: tuple[RateLimit, str]) -> None:
+        now = self._clock.now()
+        for rate_limit, subject in checks:
+            if self.hits.get(self._key(rate_limit, subject), 0) >= rate_limit.limit:
+                raise RateLimitExceededError(rate_limit.retry_after(now))
+
+    async def record(self, *hits: tuple[RateLimit, str]) -> None:
+        for rate_limit, subject in hits:
+            key = self._key(rate_limit, subject)
+            self.hits[key] = self.hits.get(key, 0) + 1
+
+    def count(self, name: str, subject: str) -> int:
+        return sum(
+            value
+            for (key_name, key_subject, _), value in self.hits.items()
+            if key_name == name and key_subject == subject
+        )
+
+
+TEST_RATE_LIMITS = AuthenticationRateLimits(
+    login_per_ip=RateLimit("login:ip", 1000, timedelta(minutes=5)),
+    login_failures_per_email=RateLimit("login:email", 1000, timedelta(minutes=15)),
+    token_per_ip=RateLimit("token:ip", 1000, timedelta(minutes=1)),
+    token_failures_per_client=RateLimit("token:client", 1000, timedelta(minutes=5)),
+)
+
+
+def make_app(
+    session: FakeSession,
+    *,
+    rate_limiter: InMemoryRateLimiter | None = None,
+    rate_limits: AuthenticationRateLimits = TEST_RATE_LIMITS,
+):
     access_tokens = AccessTokens()
     refresh_tokens = RefreshTokens()
     client_credentials = HmacClientCredentials(CLIENT_SECRET_HASH_KEY)
@@ -188,6 +231,8 @@ def make_app(session: FakeSession):
             clock=FixedClock(),
         ),
         client_secret_grace_period=timedelta(hours=24),
+        rate_limiter=rate_limiter or InMemoryRateLimiter(),
+        rate_limits=rate_limits,
     )
 
 

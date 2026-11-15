@@ -31,6 +31,12 @@ from identity.application.ports.security.refresh_token_verifier import (
 from identity.presentation.api.dependencies.services import ApiServices
 from identity.presentation.api.errors import install_error_handlers
 from identity.presentation.api.health import router as health_router
+from identity.presentation.api.rate_limit import (
+    AuthenticationRateLimits,
+    RateLimiter,
+    RateLimitGuard,
+    install_rate_limit_handler,
+)
 from identity.presentation.api.v1.router import router as v1_router
 
 
@@ -50,10 +56,16 @@ def create_app(
     client_secret_verifier: ClientSecretVerifier,
     machine_token_issuer: MachineTokenIssuer,
     client_secret_grace_period: timedelta,
+    rate_limiter: RateLimiter,
+    rate_limits: AuthenticationRateLimits,
     lifespan: Callable[[FastAPI], AbstractAsyncContextManager[None]] | None = None,
 ) -> FastAPI:
     app = FastAPI(title="FinGuard Identity Service", lifespan=lifespan)
     install_error_handlers(app)
+    install_rate_limit_handler(app)
+    app.state.identity_rate_limit = RateLimitGuard(
+        limiter=rate_limiter, limits=rate_limits
+    )
     app.state.identity_services = ApiServices(
         session_factory=session_factory,
         clock=clock,

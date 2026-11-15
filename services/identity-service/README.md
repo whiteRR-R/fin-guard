@@ -83,3 +83,26 @@ curl -X POST http://localhost:8000/api/v1/oauth/token \
 secret keeps working for the configured grace period so the client can switch
 without downtime. `DELETE /api/v1/service-accounts/{id}` revokes the account and
 all its secrets permanently.
+
+## Rate limits
+
+`POST /api/v1/auth/login` and `POST /api/v1/oauth/token` are rate limited.
+Counters are stored in PostgreSQL, so limits hold across API replicas and
+workers. Only SHA-256 hashes of IP addresses, emails and client IDs are stored.
+
+| Limit | Counts | Default |
+|---|---|---|
+| Login per IP | every attempt | 30 per 5 minutes |
+| Login per email | failed attempts | 5 per 15 minutes |
+| Token per IP | every request | 120 per minute |
+| Token per client_id | failed attempts | 10 per 5 minutes |
+
+A limited request gets `429` with a `Retry-After` header. Defaults can be
+changed with `LOGIN_ATTEMPTS_PER_IP`, `LOGIN_IP_WINDOW_SECONDS`,
+`LOGIN_FAILURES_PER_EMAIL`, `LOGIN_EMAIL_WINDOW_SECONDS`,
+`TOKEN_REQUESTS_PER_IP`, `TOKEN_IP_WINDOW_SECONDS`,
+`TOKEN_FAILURES_PER_CLIENT` and `TOKEN_CLIENT_WINDOW_SECONDS`.
+
+Limits per IP rely on the real client address. Behind a reverse proxy, set
+`IDENTITY_FORWARDED_ALLOW_IPS` to the proxy address so the API trusts its
+`X-Forwarded-For` header; otherwise every request appears to come from the proxy.

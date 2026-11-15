@@ -160,7 +160,7 @@ def test_root_alembic_config_finds_migrations() -> None:
     script_location = config.get_main_option("script_location")
     assert script_location is not None
     assert Path(script_location).is_dir()
-    assert ScriptDirectory.from_config(config).get_current_head() == "c4e8d2a7f913"
+    assert ScriptDirectory.from_config(config).get_current_head() == "d91b5f3e6a24"
 
 
 @pytest.mark.parametrize(
@@ -189,6 +189,9 @@ def test_alembic_generates_postgresql_sql(
     assert "f3d69a58c214" in output
     assert "8f6c3a9b14d2" in output
     assert "c4e8d2a7f913" in output
+    assert "d91b5f3e6a24" in output
+    assert "CREATE TABLE rate_limit_counter (" in output
+    assert "PRIMARY KEY (key_hash, window_start)" in output
     assert "ADD COLUMN delivery_attempts" in output
     assert "ADD COLUMN next_attempt_at" in output
     for enum_type in (

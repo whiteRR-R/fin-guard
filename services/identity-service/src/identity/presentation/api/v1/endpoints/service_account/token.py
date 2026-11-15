@@ -13,10 +13,16 @@ from identity.application.commands.issue_machine_access_token.handler import (
     IssueMachineAccessTokenHandler,
 )
 from identity.application.exceptions import InvalidClientError, InvalidScopeError
+from identity.infrastructure.rate_limit.limits import RateLimitExceededError
 from identity.presentation.api.dependencies.service_account.token import (
     get_issue_machine_access_token_handler,
 )
 from identity.presentation.api.dependencies.services import ClockDependency
+from identity.presentation.api.rate_limit import (
+    RateLimitGuardDependency,
+    client_ip,
+    too_many_requests,
+)
 from identity.presentation.api.v1.schemas.service_account import (
     MachineAccessTokenResponse,
     OAuthErrorResponse,
@@ -150,11 +156,19 @@ def _requested_scopes(form: dict[str, str]) -> tuple[str, ...] | None:
 async def issue_machine_access_token(
     request: Request,
     clock: ClockDependency,
+    guard: RateLimitGuardDependency,
     handler: Annotated[
         IssueMachineAccessTokenHandler,
         Depends(get_issue_machine_access_token_handler),
     ],
 ) -> JSONResponse:
+    ip_check = (guard.limits.token_per_ip, client_ip(request))
+    try:
+        await guard.limiter.ensure_allowed(ip_check)
+        await guard.limiter.record(ip_check)
+    except RateLimitExceededError as error:
+        return too_many_requests(error.retry_after, {"error": "too_many_requests"})
+
     try:
         form = await _read_form(request)
 
@@ -165,6 +179,12 @@ async def issue_machine_access_token(
             raise OAuthError("unsupported_grant_type")
 
         client_id, client_secret = _client_credentials(request, form)
+        client_check = (guard.limits.token_failures_per_client, client_id)
+
+        try:
+            await guard.limiter.ensure_allowed(client_check)
+        except RateLimitExceededError as error:
+            return too_many_requests(error.retry_after, {"error": "too_many_requests"})
 
         try:
             result = await handler.execute(
@@ -175,6 +195,7 @@ async def issue_machine_access_token(
                 )
             )
         except InvalidClientError as error:
+            await guard.limiter.record(client_check)
             raise OAuthError("invalid_client", status_code=401) from error
         except InvalidScopeError as error:
             raise OAuthError("invalid_scope") from error
