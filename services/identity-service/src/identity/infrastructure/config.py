@@ -37,6 +37,39 @@ class TokenSettings(BaseSettings):
     invitation_token_lifetime_days: int = Field(default=7, gt=0)
 
 
+class ServiceAccountSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).resolve().parents[3] / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        frozen=True,
+        hide_input_in_errors=True,
+    )
+
+    client_secret_hash_key: SecretStr = Field(default=..., repr=False)
+    machine_token_lifetime_seconds: int = Field(default=900, gt=0, le=3600)
+    client_secret_rotation_grace_hours: int = Field(default=24, ge=0, le=168)
+
+
+class RateLimitSettings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).resolve().parents[3] / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        frozen=True,
+        hide_input_in_errors=True,
+    )
+
+    login_attempts_per_ip: int = Field(default=30, gt=0)
+    login_ip_window_seconds: int = Field(default=300, gt=0)
+    login_failures_per_email: int = Field(default=5, gt=0)
+    login_email_window_seconds: int = Field(default=900, gt=0)
+    token_requests_per_ip: int = Field(default=120, gt=0)
+    token_ip_window_seconds: int = Field(default=60, gt=0)
+    token_failures_per_client: int = Field(default=10, gt=0)
+    token_client_window_seconds: int = Field(default=300, gt=0)
+
+
 class MailSettings(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=Path(__file__).resolve().parents[3] / ".env",

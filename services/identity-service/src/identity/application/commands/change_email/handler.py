@@ -6,9 +6,14 @@ from identity.application.exceptions import (
     InvalidEmailError,
     InvalidEmployeeStateError,
 )
+from identity.application.messages.employee_email_changed import (
+    EmployeeEmailChangedMessage,
+)
+from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
 )
+from identity.application.ports.repositories.outbox_repository import OutboxRepository
 from identity.application.ports.security.password_hasher import PasswordHasher
 from identity.application.ports.unit_of_work import UnitOfWork
 from identity.domain.value_objects.email import Email
@@ -20,10 +25,14 @@ class ChangeEmailHandler:
     def __init__(
         self,
         uow: UnitOfWork,
+        clock: Clock,
+        outbox: OutboxRepository,
         employees: EmployeeRepository,
         password_hasher: PasswordHasher,
     ) -> None:
         self._uow = uow
+        self._clock = clock
+        self._outbox = outbox
         self._employees = employees
         self._password_hasher = password_hasher
 
@@ -34,7 +43,7 @@ class ChangeEmailHandler:
 
         async with self._uow:
             employee = await self._employees.get_by_id(employee_id)
-            
+
             if employee is None:
                 raise EmployeeNotFoundError("Employee not found")
 
@@ -42,7 +51,7 @@ class ChangeEmailHandler:
                 raise InvalidEmployeeStateError(
                     "Active employee must have a password hash"
                 )
-                
+
             password_is_valid = self._password_hasher.verify(
                 password=password, hashed_password=employee.password_hash
             )
@@ -61,4 +70,10 @@ class ChangeEmailHandler:
             employee.change_email(new_email)
 
             await self._employees.save(employee)
+            await self._outbox.add(
+                EmployeeEmailChangedMessage(
+                    employee_id=employee.id.value,
+                    created_at=self._clock.now(),
+                )
+            )
             await self._uow.commit()

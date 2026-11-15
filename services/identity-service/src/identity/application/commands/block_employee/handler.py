@@ -5,10 +5,12 @@ from identity.application.exceptions import (
     AuthenticationError,
     EmployeeNotFoundError,
 )
+from identity.application.messages.employee_blocked import EmployeeBlockedMessage
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
 )
+from identity.application.ports.repositories.outbox_repository import OutboxRepository
 from identity.application.ports.repositories.refresh_session_repository import (
     RefreshSessionRepository,
 )
@@ -22,15 +24,17 @@ class BlockEmployeeHandler:
     def __init__(
         self,
         uow: UnitOfWork,
+        clock: Clock,
+        outbox: OutboxRepository,
         employees: EmployeeRepository,
         refresh_sessions: RefreshSessionRepository,
-        clock: Clock,
         block_policy: EmployeeBlockPolicy,
     ) -> None:
         self._uow = uow
+        self._clock = clock
+        self._outbox = outbox
         self._employees = employees
         self._refresh_sessions = refresh_sessions
-        self._clock = clock
         self._block_policy = block_policy
 
     async def execute(self, command: BlockEmployeeCommand) -> BlockEmployeeResult:
@@ -64,6 +68,14 @@ class BlockEmployeeHandler:
                 await self._refresh_sessions.save(session)
 
             await self._employees.save(target)
+            await self._outbox.add(
+                EmployeeBlockedMessage(
+                    employee_id=target.id.value,
+                    actor_id=actor.id.value,
+                    revoked_session_ids=tuple(s.id.value for s in sessions),
+                    created_at=now,
+                )
+            )
             await self._uow.commit()
 
         return BlockEmployeeResult(

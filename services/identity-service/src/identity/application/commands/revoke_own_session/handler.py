@@ -2,7 +2,7 @@ from identity.application.commands.revoke_own_session.command import (
     RevokeOwnSessionCommand,
 )
 from identity.application.exceptions import AccessDeniedError, SessionNotFoundError
-from identity.application.messages.session_revoked import SessionRevoked
+from identity.application.messages.session_revoked import SessionRevokedMessage
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.outbox_repository import OutboxRepository
 from identity.application.ports.repositories.refresh_session_repository import (
@@ -46,7 +46,7 @@ class RevokeOwnSessionHandler:
 
             now = self._clock.now()
             session.revoke(now)
-            outbox_message = SessionRevoked(
+            outbox_message = SessionRevokedMessage(
                 employee_id=employee_id.value,
                 session_id=session.id.value,
                 created_at=now,

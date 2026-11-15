@@ -53,7 +53,10 @@ class LoginEmployeeHandler:
             if employee is None:
                 raise AuthenticationError("Invalid credentials")
 
-            if employee.status is not EmployeeStatus.ACTIVE or employee.password_hash is None:
+            if (
+                employee.status is not EmployeeStatus.ACTIVE
+                or employee.password_hash is None
+            ):
                 raise AuthenticationError("Invalid credentials")
 
             password_is_verified = self._password_hasher.verify(
@@ -92,5 +95,5 @@ class LoginEmployeeHandler:
         return LoginEmployeeResult(
             access_token=issued_access_token.plain_token,
             refresh_token=issued_refresh_token.plain_token,
-            refresh_token_expires_at=refresh_expires_at
+            refresh_token_expires_at=refresh_expires_at,
         )

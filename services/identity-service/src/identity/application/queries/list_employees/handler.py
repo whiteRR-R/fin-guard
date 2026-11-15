@@ -60,7 +60,9 @@ class ListEmployeesHandler:
                         employee_id=employee.id.value,
                         email=employee.email.value,
                         status=employee.status,
-                        roles=tuple(sorted(employee.roles, key=lambda role: role.value)),
+                        roles=tuple(
+                            sorted(employee.roles, key=lambda role: role.value)
+                        ),
                     )
                     for employee in employees[: query.limit]
                 ),

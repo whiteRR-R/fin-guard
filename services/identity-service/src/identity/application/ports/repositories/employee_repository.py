@@ -20,9 +20,7 @@ class EmployeeRepository(Protocol):
 
     async def get_by_email(self, email: Email) -> EmployeeAccount | None: ...
 
-    async def get_by_email_with_lock(
-        self, email: Email
-    ) -> EmployeeAccount | None: ...
+    async def get_by_email_with_lock(self, email: Email) -> EmployeeAccount | None: ...
 
     async def list_page(
         self,

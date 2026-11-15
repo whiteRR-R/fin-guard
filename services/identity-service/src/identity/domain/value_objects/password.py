@@ -12,11 +12,9 @@ class Password:
             raise PasswordValidationError(
                 "Password must contain at least 12 characters"
             )
-        
+
         if len(self.value.encode("utf-8")) > 72:
-            raise PasswordValidationError(
-                "Password must not exceed 72 bytes"
-            )
+            raise PasswordValidationError("Password must not exceed 72 bytes")
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,6 +23,4 @@ class HashedPassword:
 
     def __post_init__(self):
         if not self.value:
-            raise PasswordValidationError(
-                "Password hash cannot be empty"
-            )
+            raise PasswordValidationError("Password hash cannot be empty")

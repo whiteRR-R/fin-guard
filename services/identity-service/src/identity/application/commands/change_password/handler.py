@@ -8,10 +8,14 @@ from identity.application.exceptions import (
     InvalidEmployeeStateError,
     InvalidPasswordError,
 )
+from identity.application.messages.employee_password_changed import (
+    EmployeePasswordChangedMessage,
+)
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
 )
+from identity.application.ports.repositories.outbox_repository import OutboxRepository
 from identity.application.ports.repositories.refresh_session_repository import (
     RefreshSessionRepository,
 )
@@ -26,15 +30,17 @@ class ChangePasswordHandler:
     def __init__(
         self,
         uow: UnitOfWork,
+        clock: Clock,
+        outbox: OutboxRepository,
         employees: EmployeeRepository,
         refresh_sessions: RefreshSessionRepository,
-        clock: Clock,
         password_hasher: PasswordHasher,
     ) -> None:
         self._uow = uow
+        self._clock = clock
+        self._outbox = outbox
         self._employees = employees
         self._refresh_sessions = refresh_sessions
-        self._clock = clock
         self._password_hasher = password_hasher
 
     async def execute(self, command: ChangePasswordCommand):
@@ -53,9 +59,9 @@ class ChangePasswordHandler:
 
             if employee.password_hash is None:
                 raise InvalidEmployeeStateError(
-                    "Active employee must have a password hash" 
+                    "Active employee must have a password hash"
                 )
-            
+
             current_password_is_valid = self._password_hasher.verify(
                 password=current_password,
                 hashed_password=employee.password_hash,
@@ -86,4 +92,11 @@ class ChangePasswordHandler:
                 await self._refresh_sessions.save(session)
 
             await self._employees.save(employee)
+            await self._outbox.add(
+                EmployeePasswordChangedMessage(
+                    employee_id=employee.id.value,
+                    revoked_session_ids=tuple(s.id.value for s in sessions),
+                    created_at=now,
+                )
+            )
             await self._uow.commit()

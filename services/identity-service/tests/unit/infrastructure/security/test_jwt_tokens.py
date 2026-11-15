@@ -20,7 +20,7 @@ from identity.application.exceptions import (
     RefreshTokenReuseError,
 )
 from identity.application.messages.refresh_token_reuse_detected import (
-    RefreshTokenReuseDetected,
+    RefreshTokenReuseDetectedMessage,
 )
 from identity.domain.aggregates.employee_account import EmployeeAccount
 from identity.domain.aggregates.refresh_session import RefreshSession
@@ -297,7 +297,9 @@ def test_refresh_verifier_rejects_malformed_signed_claims(
 @pytest.mark.parametrize("key", [b"short", "short", b""])
 def test_signing_key_must_be_strong(key: bytes | str) -> None:
     with pytest.raises(ValueError):
-        JwtAccessTokens(cast(bytes, key), timedelta(minutes=15), ISSUER, ACCESS_AUDIENCE)
+        JwtAccessTokens(
+            cast(bytes, key), timedelta(minutes=15), ISSUER, ACCESS_AUDIENCE
+        )
     with pytest.raises(ValueError):
         JwtRefreshTokens(
             cast(bytes, key),
@@ -415,5 +417,5 @@ def test_real_refresh_tokens_rotate_and_detect_reuse(
 
     assert store.state.sessions[session_id].revoked_at == NOW
     assert len(outbox.added) == 1
-    assert isinstance(outbox.added[0], RefreshTokenReuseDetected)
+    assert isinstance(outbox.added[0], RefreshTokenReuseDetectedMessage)
     assert uow.commit_count == 2

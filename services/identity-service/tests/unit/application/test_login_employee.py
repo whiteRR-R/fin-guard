@@ -43,9 +43,7 @@ def make_context(
     *,
     password_is_valid: bool = True,
 ) -> LoginTestContext:
-    employees = EmployeeRepositoryFake(
-        () if employee is None else (employee,)
-    )
+    employees = EmployeeRepositoryFake(() if employee is None else (employee,))
     refresh_sessions = RefreshSessionRepositoryFake(
         active_at=NOW,
     )

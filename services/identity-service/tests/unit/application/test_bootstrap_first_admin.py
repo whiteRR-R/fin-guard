@@ -17,7 +17,7 @@ from identity.application.exceptions import (
     EmailAlreadyTakenError,
 )
 from identity.application.messages.first_admin_bootstrapped import (
-    FirstAdminBootstrapped,
+    FirstAdminBootstrappedMessage,
 )
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus
@@ -78,7 +78,7 @@ def test_bootstrap_creates_active_admin_and_audit_atomically(
     assert hasher.hash_calls == [Password(PASSWORD)]
     assert len(store.state.messages) == 1
     message = store.state.messages[0]
-    assert isinstance(message, FirstAdminBootstrapped)
+    assert isinstance(message, FirstAdminBootstrappedMessage)
     assert message.employee_id == result.employee_id
     assert message.created_at == NOW
     assert message.version == 1
@@ -214,7 +214,9 @@ def test_concurrent_bootstraps_create_only_one_admin(store: OnboardingStore) -> 
 
     assert sum(isinstance(result, BootstrapFirstAdminResult) for result in results) == 1
     errors = [
-        result for result in results if isinstance(result, BootstrapAlreadyCompletedError)
+        result
+        for result in results
+        if isinstance(result, BootstrapAlreadyCompletedError)
     ]
     assert len(errors) == 1
     assert len(store.state.employees) == 1

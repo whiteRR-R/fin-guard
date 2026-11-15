@@ -3,7 +3,7 @@ from identity.application.exceptions import (
     InvitationNotFoundError,
 )
 from identity.application.messages.invitation_email_requested import (
-    InvitationEmailRequested,
+    InvitationEmailRequestedMessage,
 )
 from identity.application.ports.clock import Clock
 from identity.application.ports.email_sender import EmailSender
@@ -39,7 +39,7 @@ class DeliverInvitationEmail:
         self._token_verifier = token_verifier
         self._email_sender = email_sender
 
-    async def execute(self, message: InvitationEmailRequested) -> None:
+    async def execute(self, message: InvitationEmailRequestedMessage) -> None:
         invitation_id = InvitationId(message.invitation_id)
         recipient_email = Email(message.recipient_email)
 

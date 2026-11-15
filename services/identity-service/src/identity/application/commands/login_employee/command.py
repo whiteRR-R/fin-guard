@@ -5,4 +5,3 @@ from dataclasses import dataclass, field
 class LoginEmployeeCommand:
     email: str
     password: str = field(repr=False)
-    

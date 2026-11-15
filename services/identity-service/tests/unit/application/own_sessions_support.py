@@ -88,8 +88,7 @@ def make_context() -> OwnSessionsContext:
         return [
             session
             for session in store.state.sessions.values()
-            if session.employee_id == employee_id
-            and session.is_active(clock.now())
+            if session.employee_id == employee_id and session.is_active(clock.now())
         ]
 
     async def add_message(message: OutboxMessage) -> None:

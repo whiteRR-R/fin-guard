@@ -12,3 +12,8 @@ class InvitationStatus(Enum):
     PENDING = "PENDING"
     ACCEPTED = "ACCEPTED"
     REVOKED = "REVOKED"
+
+
+class ServiceAccountStatus(Enum):
+    ACTIVE = "ACTIVE"
+    REVOKED = "REVOKED"

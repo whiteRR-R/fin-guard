@@ -14,6 +14,7 @@ from identity.application.exceptions import (
     InvalidInvitationTokenError,
     InvitationNotFoundError,
 )
+from identity.application.messages.invitation_accepted import InvitationAcceptedMessage
 from identity.application.ports.security.invitation_token_verifier import (
     InvitationTokenClaims,
 )
@@ -31,6 +32,7 @@ from tests.unit.application.doubles import (
     FixedClock,
     InvitationRepositoryFake,
     InvitationTokenVerifierStub,
+    OutboxRepositoryFake,
     PasswordHasherStub,
     UnitOfWorkFake,
 )
@@ -66,6 +68,7 @@ def make_handler(
     invitation_exists: bool = True,
     employee_exists: bool = True,
     hash_matches: bool = True,
+    outbox: OutboxRepositoryFake | None = None,
 ) -> tuple[
     AcceptInvitationHandler,
     UnitOfWorkFake,
@@ -99,6 +102,7 @@ def make_handler(
         clock=FixedClock(NOW),
         employees=employees,
         invitations=invitations,
+        outbox=outbox if outbox is not None else OutboxRepositoryFake(),
         password_hasher=password_hasher,
         invitation_verifier=token_verifier,
     )
@@ -125,8 +129,9 @@ def execute_accept(handler: AcceptInvitationHandler) -> None:
 
 def test_accept_invitation_saves_accepted_invitation_and_active_employee() -> None:
     invitation = make_invitation()
+    outbox = OutboxRepositoryFake()
     handler, uow, employees, invitations, password_hasher, token_verifier = (
-        make_handler(invitation=invitation)
+        make_handler(invitation=invitation, outbox=outbox)
     )
 
     execute_accept(handler)
@@ -145,6 +150,14 @@ def test_accept_invitation_saves_accepted_invitation_and_active_employee() -> No
     assert password_hasher.hash_calls == [Password(VALID_PASSWORD)]
     assert token_verifier.received_tokens == [PLAIN_TOKEN]
     assert token_verifier.checked_hashes == [invitation.token_hash]
+    assert outbox.added == [
+        InvitationAcceptedMessage(
+            message_id=outbox.added[0].message_id,
+            invitation_id=invitation.id.value,
+            employee_id=employee.id.value,
+            created_at=NOW,
+        )
+    ]
     assert uow.commit_count == 1
     assert uow.rollback_count == 0
 
@@ -225,9 +238,7 @@ def test_revoked_invitation_does_not_activate_employee() -> None:
     invitation = make_invitation()
     invitation.revoke(NOW - timedelta(minutes=30))
     invitation.pull_events()
-    handler, uow, employees, invitations, _, _ = make_handler(
-        invitation=invitation
-    )
+    handler, uow, employees, invitations, _, _ = make_handler(invitation=invitation)
 
     with pytest.raises(InvitationRevokedError, match="revoked"):
         execute_accept(handler)
@@ -263,3 +274,39 @@ def test_old_token_cannot_accept_new_invitation_after_reissue() -> None:
     assert employees.saved == []
     assert uow.commit_count == 0
     assert uow.rollback_count == 1
+
+
+@pytest.mark.parametrize(
+    "options",
+    [
+        {"invitation_exists": False},
+        {"employee_exists": False},
+        {"hash_matches": False},
+    ],
+)
+def test_rejected_acceptance_writes_no_audit_message(options: dict[str, bool]) -> None:
+    outbox = OutboxRepositoryFake()
+    handler, *_ = make_handler(invitation=make_invitation(), outbox=outbox, **options)
+
+    with pytest.raises(
+        (InvitationNotFoundError, EmployeeNotFoundError, InvalidInvitationTokenError)
+    ):
+        execute_accept(handler)
+
+    assert outbox.added == []
+
+
+def test_expired_invitation_writes_no_audit_message() -> None:
+    outbox = OutboxRepositoryFake()
+    handler, *_ = make_handler(
+        invitation=make_invitation(
+            created_at=NOW - timedelta(days=2),
+            expires_at=NOW - timedelta(days=1),
+        ),
+        outbox=outbox,
+    )
+
+    with pytest.raises(InvitationExpiredError):
+        execute_accept(handler)
+
+    assert outbox.added == []

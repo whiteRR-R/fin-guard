@@ -21,7 +21,8 @@ from identity.application.exceptions import (
     EmployeeNotActiveError,
     InvitationNotFoundError,
 )
-from identity.application.messages.invitation_revoked import InvitationRevoked
+from identity.application.messages.invitation_accepted import InvitationAcceptedMessage
+from identity.application.messages.invitation_revoked import InvitationRevokedMessage
 from identity.application.ports.security.invitation_token_verifier import (
     InvitationTokenClaims,
 )
@@ -125,7 +126,7 @@ def test_admin_revokes_invitation_and_records_audit(
     assert isinstance(events[0], InvitationRevokedEvent)
     assert len(store.state.messages) == 1
     message = store.state.messages[0]
-    assert isinstance(message, InvitationRevoked)
+    assert isinstance(message, InvitationRevokedMessage)
     assert message.actor_id == admin.id.value
     assert message.invitation_id == invitation.id.value
     assert message.created_at == NOW
@@ -166,7 +167,9 @@ def test_non_admin_cannot_revoke(
 def test_inactive_admin_cannot_revoke(
     store: OnboardingStore, invitation: Invitation, status: EmployeeStatus
 ) -> None:
-    actor = make_employee("actor@example.com", roles=(EmployeeRole.ADMIN,), status=status)
+    actor = make_employee(
+        "actor@example.com", roles=(EmployeeRole.ADMIN,), status=status
+    )
     store.state.employees[actor.id] = actor
     context = make_context(store)
 
@@ -299,6 +302,7 @@ def test_accept_and_revoke_cannot_both_succeed(
             clock=FixedClock(NOW),
             employees=accept_context.employees,
             invitations=accept_context.invitations,
+            outbox=accept_context.outbox,
             password_hasher=PasswordHasherStub(password_is_valid=True),
             invitation_verifier=InvitationTokenVerifierStub(
                 InvitationTokenClaims(invitation_id=invitation.id.value)
@@ -325,9 +329,15 @@ def test_accept_and_revoke_cannot_both_succeed(
         assert isinstance(results[1], InvitationRevokedError)
         assert store.state.invitations[invitation.id].status is InvitationStatus.REVOKED
         assert store.state.employees[invitee.id].status is EmployeeStatus.INVITED
-        assert len(store.state.messages) == 1
+        assert [type(message) for message in store.state.messages] == [
+            InvitationRevokedMessage
+        ]
     else:
         assert isinstance(results[1], InvitationAlreadyAcceptedError)
-        assert store.state.invitations[invitation.id].status is InvitationStatus.ACCEPTED
+        assert (
+            store.state.invitations[invitation.id].status is InvitationStatus.ACCEPTED
+        )
         assert store.state.employees[invitee.id].status is EmployeeStatus.ACTIVE
-        assert store.state.messages == []
+        assert [type(message) for message in store.state.messages] == [
+            InvitationAcceptedMessage
+        ]

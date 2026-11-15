@@ -67,7 +67,9 @@ def test_concurrent_requests_with_same_token_cannot_both_succeed() -> None:
         )
 
         successes = [
-            result for result in outcomes if isinstance(result, RefreshAccessTokenResult)
+            result
+            for result in outcomes
+            if isinstance(result, RefreshAccessTokenResult)
         ]
         reuse_errors = [
             result for result in outcomes if isinstance(result, RefreshTokenReuseError)

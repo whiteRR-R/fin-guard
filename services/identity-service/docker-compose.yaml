@@ -1,20 +1,60 @@
 name: identity-service
-services:
-  
-  identity-database:
-  
-    image: postgres:16
 
+x-identity-service: &identity-service
+  build: .
+  image: finguard/identity-service:local
+  env_file: .env
+  environment:
+    DATABASE_URL: postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@identity-database:5432/${DATABASE_NAME}
+
+services:
+  identity-database:
+    image: postgres:16
     environment:
       - POSTGRES_USER=${DATABASE_USER}
       - POSTGRES_DB=${DATABASE_NAME}
       - POSTGRES_PASSWORD=${DATABASE_PASSWORD}
-
     ports:
       - "${IDENTITY_DB_PORT:-5432}:5432"
-    
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  identity-migrate:
+    <<: *identity-service
+    command: ["alembic", "upgrade", "head"]
+    restart: "no"
+    healthcheck:
+      disable: true
+    depends_on:
+      identity-database:
+        condition: service_healthy
+
+  identity-api:
+    <<: *identity-service
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@identity-database:5432/${DATABASE_NAME}
+      FORWARDED_ALLOW_IPS: ${IDENTITY_FORWARDED_ALLOW_IPS:-127.0.0.1}
+    ports:
+      - "${IDENTITY_API_PORT:-8000}:8000"
+    restart: unless-stopped
+    depends_on:
+      identity-migrate:
+        condition: service_completed_successfully
+
+  identity-outbox-worker:
+    <<: *identity-service
+    command: ["python", "-m", "identity.outbox_worker"]
+    restart: unless-stopped
+    healthcheck:
+      disable: true
+    depends_on:
+      identity-migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres_data:

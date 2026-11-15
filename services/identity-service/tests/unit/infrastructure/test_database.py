@@ -38,10 +38,14 @@ def database_settings_cache() -> Iterator[None]:
 def test_database_settings_factory_caches_until_reset(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity")
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity"
+    )
     settings = get_database_settings()
 
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/another")
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/another"
+    )
 
     assert get_database_settings() is settings
     assert settings.database_url.get_secret_value() == (
@@ -57,8 +61,12 @@ def test_database_settings_factory_caches_until_reset(
     )
 
 
-def test_database_settings_read_url_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity")
+def test_database_settings_read_url_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity"
+    )
 
     settings = DatabaseSettings()
 
@@ -104,7 +112,9 @@ def test_database_engine_rejects_malformed_url(
 
 
 def test_database_engine_and_session_factory(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity")
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity"
+    )
     engine = create_database_engine(DatabaseSettings())
     session_factory = create_session_factory(engine)
     session = session_factory()
@@ -133,7 +143,10 @@ def test_alembic_upgrade_and_downgrade_with_shared_connection(
             config.attributes["connection"] = connection
 
             command.upgrade(config, "b7c84a19d5e2")
-            assert MigrationContext.configure(connection).get_current_revision() == "b7c84a19d5e2"
+            assert (
+                MigrationContext.configure(connection).get_current_revision()
+                == "b7c84a19d5e2"
+            )
 
             command.downgrade(config, "base")
             assert MigrationContext.configure(connection).get_current_revision() is None
@@ -147,16 +160,16 @@ def test_root_alembic_config_finds_migrations() -> None:
     script_location = config.get_main_option("script_location")
     assert script_location is not None
     assert Path(script_location).is_dir()
-    assert ScriptDirectory.from_config(config).get_current_head() == "8f6c3a9b14d2"
+    assert ScriptDirectory.from_config(config).get_current_head() == "d91b5f3e6a24"
 
 
 @pytest.mark.parametrize(
     ("database_url", "password"),
     [
-        ("postgresql+asyncpg://user:secret@localhost/identity", "secret"),
+        ("postgresql+asyncpg://user:db-pa55word@localhost/identity", "db-pa55word"),
         (
-            "postgresql+asyncpg://user:secret%25value%40host@localhost/identity",
-            "secret%value@host",
+            "postgresql+asyncpg://user:db-pa55word%25value%40host@localhost/identity",
+            "db-pa55word%value@host",
         ),
     ],
 )
@@ -175,9 +188,19 @@ def test_alembic_generates_postgresql_sql(
     assert "CREATE TABLE alembic_version" in output
     assert "f3d69a58c214" in output
     assert "8f6c3a9b14d2" in output
+    assert "c4e8d2a7f913" in output
+    assert "d91b5f3e6a24" in output
+    assert "CREATE TABLE rate_limit_counter (" in output
+    assert "PRIMARY KEY (key_hash, window_start)" in output
     assert "ADD COLUMN delivery_attempts" in output
     assert "ADD COLUMN next_attempt_at" in output
-    for enum_type in ("employee_role", "employee_status", "invitation_status"):
+    for enum_type in (
+        "employee_role",
+        "employee_status",
+        "invitation_status",
+        "machine_scope",
+        "service_account_status",
+    ):
         assert f"CREATE TYPE {enum_type} AS ENUM" in output
     for table in (
         "employee",
@@ -185,6 +208,8 @@ def test_alembic_generates_postgresql_sql(
         "session",
         "used_refresh_token",
         "outbox_message",
+        "service_account",
+        "service_account_secret",
     ):
         assert f"CREATE TABLE {table} (" in output
     assert "CREATE UNIQUE INDEX uq_employee_email_lower" in output
@@ -192,7 +217,10 @@ def test_alembic_generates_postgresql_sql(
     assert "PRIMARY KEY (session_id, token_hash)" in output
     assert "payload JSONB NOT NULL" in output
     assert "WHERE published_at IS NULL" in output
-    assert "secret" not in output
+    assert "CREATE UNIQUE INDEX uq_service_account_secret_current" in output
+    assert "WHERE expires_at IS NULL AND revoked_at IS NULL" in output
+    assert "'transactions:write'" in output
+    assert "pa55word" not in output
     configured_url = config.get_main_option("sqlalchemy.url")
     assert configured_url is not None
     assert make_url(configured_url).password == password

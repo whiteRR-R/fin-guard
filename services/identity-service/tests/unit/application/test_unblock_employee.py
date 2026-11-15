@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime, timezone
 
 import pytest
 
@@ -9,12 +10,20 @@ from identity.application.commands.unblock_employee.handler import (
     UnblockEmployeeHandler,
 )
 from identity.application.exceptions import AccessDeniedError, AuthenticationError
+from identity.application.messages.employee_unblocked import EmployeeUnblockedMessage
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus
 from identity.domain.policies.employee_unblock import EmployeeUnblockPolicy
 from identity.domain.value_objects.employee_id import EmployeeId
-from tests.unit.application.doubles import EmployeeRepositoryFake, UnitOfWorkFake
+from tests.unit.application.doubles import (
+    EmployeeRepositoryFake,
+    FixedClock,
+    OutboxRepositoryFake,
+    UnitOfWorkFake,
+)
 from tests.unit.application.factories import make_employee
+
+NOW = datetime(2026, 9, 12, 12, 0, tzinfo=timezone.utc)
 
 
 def test_active_admin_unblocks_employee() -> None:
@@ -25,8 +34,11 @@ def test_active_admin_unblocks_employee() -> None:
     )
     employees = EmployeeRepositoryFake((admin, employee))
     uow = UnitOfWorkFake()
+    outbox = OutboxRepositoryFake()
     handler = UnblockEmployeeHandler(
         uow=uow,
+        clock=FixedClock(NOW),
+        outbox=outbox,
         employees=employees,
         unblock_policy=EmployeeUnblockPolicy(),
     )
@@ -44,6 +56,14 @@ def test_active_admin_unblocks_employee() -> None:
     assert result.status == EmployeeStatus.ACTIVE.value
     assert employee.status is EmployeeStatus.ACTIVE
     assert employees.saved == [employee]
+    assert outbox.added == [
+        EmployeeUnblockedMessage(
+            message_id=outbox.added[0].message_id,
+            employee_id=employee.id.value,
+            actor_id=admin.id.value,
+            created_at=NOW,
+        )
+    ]
     assert uow.commit_count == 1
     assert uow.rollback_count == 0
 
@@ -56,8 +76,11 @@ def test_non_admin_cannot_unblock_employee() -> None:
     )
     employees = EmployeeRepositoryFake((analyst, employee))
     uow = UnitOfWorkFake()
+    outbox = OutboxRepositoryFake()
     handler = UnblockEmployeeHandler(
         uow=uow,
+        clock=FixedClock(NOW),
+        outbox=outbox,
         employees=employees,
         unblock_policy=EmployeeUnblockPolicy(),
     )
@@ -74,6 +97,7 @@ def test_non_admin_cannot_unblock_employee() -> None:
 
     assert employee.status is EmployeeStatus.BLOCKED
     assert employees.saved == []
+    assert outbox.added == []
     assert uow.commit_count == 0
     assert uow.rollback_count == 1
 
@@ -86,8 +110,11 @@ def test_missing_actor_is_rejected_before_target_lookup() -> None:
     missing_actor_id = EmployeeId.new()
     employees = EmployeeRepositoryFake((employee,))
     uow = UnitOfWorkFake()
+    outbox = OutboxRepositoryFake()
     handler = UnblockEmployeeHandler(
         uow=uow,
+        clock=FixedClock(NOW),
+        outbox=outbox,
         employees=employees,
         unblock_policy=EmployeeUnblockPolicy(),
     )
@@ -104,5 +131,6 @@ def test_missing_actor_is_rejected_before_target_lookup() -> None:
 
     assert employees.requested_ids == [missing_actor_id]
     assert employees.saved == []
+    assert outbox.added == []
     assert uow.commit_count == 0
     assert uow.rollback_count == 1

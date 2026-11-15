@@ -22,6 +22,4 @@ class EmployeeUnblockPolicy:
             )
 
         if actor.id == target.id:
-            raise EmployeeUnblockNotAllowedError(
-                "Administrator cannot unblock itself"
-            )
+            raise EmployeeUnblockNotAllowedError("Administrator cannot unblock itself")

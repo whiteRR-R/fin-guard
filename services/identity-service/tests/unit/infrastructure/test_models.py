@@ -50,7 +50,11 @@ def test_used_refresh_token_history_is_unique_per_session() -> None:
 
 def test_outbox_message_has_json_payload_and_pending_index() -> None:
     table = Base.metadata.tables["outbox_message"]
-    index = next(index for index in table.indexes if index.name == "ix_outbox_message_pending_created_at")
+    index = next(
+        index
+        for index in table.indexes
+        if index.name == "ix_outbox_message_pending_created_at"
+    )
 
     assert table.c.payload.type.__class__ is postgresql.JSONB
     assert list(table.primary_key.columns.keys()) == ["message_id"]

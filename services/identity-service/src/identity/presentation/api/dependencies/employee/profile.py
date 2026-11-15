@@ -7,6 +7,7 @@ from identity.infrastructure.persistence.unit_of_work import SqlAlchemyUnitOfWor
 from identity.presentation.api.dependencies.repositories import (
     AsyncSessionDependency,
     EmployeeRepositoryDependency,
+    OutboxRepositoryDependency,
     RefreshSessionRepositoryDependency,
 )
 from identity.presentation.api.dependencies.services import (
@@ -28,10 +29,14 @@ async def get_current_employee_handler(
 async def get_change_email_handler(
     session: AsyncSessionDependency,
     employees: EmployeeRepositoryDependency,
+    outbox: OutboxRepositoryDependency,
+    clock: ClockDependency,
     password_hasher: PasswordHasherDependency,
 ) -> ChangeEmailHandler:
     return ChangeEmailHandler(
         uow=SqlAlchemyUnitOfWork(session),
+        clock=clock,
+        outbox=outbox,
         employees=employees,
         password_hasher=password_hasher,
     )
@@ -41,11 +46,13 @@ async def get_change_password_handler(
     session: AsyncSessionDependency,
     employees: EmployeeRepositoryDependency,
     refresh_sessions: RefreshSessionRepositoryDependency,
+    outbox: OutboxRepositoryDependency,
     clock: ClockDependency,
     password_hasher: PasswordHasherDependency,
 ) -> ChangePasswordHandler:
     return ChangePasswordHandler(
         uow=SqlAlchemyUnitOfWork(session),
+        outbox=outbox,
         employees=employees,
         refresh_sessions=refresh_sessions,
         clock=clock,

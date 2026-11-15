@@ -5,4 +5,3 @@ from dataclasses import dataclass, field
 class AcceptInvitationCommand:
     token: str = field(repr=False)
     password: str = field(repr=False)
-    

@@ -9,7 +9,7 @@ from identity.application.exceptions import (
     EmailAlreadyTakenError,
 )
 from identity.application.messages.first_admin_bootstrapped import (
-    FirstAdminBootstrapped,
+    FirstAdminBootstrappedMessage,
 )
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.bootstrap_repository import (
@@ -52,7 +52,9 @@ class BootstrapFirstAdminHandler:
 
         async with self._uow:
             if not await self._bootstrap.try_claim_first_admin():
-                raise BootstrapAlreadyCompletedError("First admin bootstrap is completed")
+                raise BootstrapAlreadyCompletedError(
+                    "First admin bootstrap is completed"
+                )
 
             if await self._employees.has_admin():
                 raise BootstrapAlreadyCompletedError("An administrator already exists")
@@ -69,7 +71,7 @@ class BootstrapFirstAdminHandler:
 
             await self._employees.add(employee)
             await self._outbox.add(
-                FirstAdminBootstrapped(
+                FirstAdminBootstrappedMessage(
                     employee_id=employee.id.value,
                     created_at=self._clock.now(),
                 )

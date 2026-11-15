@@ -10,11 +10,18 @@ from identity.application.ports.security.access_token_issuer import AccessTokenI
 from identity.application.ports.security.access_token_verifier import (
     AccessTokenVerifier,
 )
+from identity.application.ports.security.client_credentials import (
+    ClientCredentialsIssuer,
+    ClientSecretVerifier,
+)
 from identity.application.ports.security.invitation_token_issuer import (
     InvitationTokenIssuer,
 )
 from identity.application.ports.security.invitation_token_verifier import (
     InvitationTokenVerifier,
+)
+from identity.application.ports.security.machine_token_issuer import (
+    MachineTokenIssuer,
 )
 from identity.application.ports.security.password_hasher import PasswordHasher
 from identity.application.ports.security.refresh_token_issuer import RefreshTokenIssuer
@@ -35,6 +42,10 @@ class ApiServices:
     refresh_token_lifetime: timedelta
     invitation_token_issuer: InvitationTokenIssuer
     invitation_token_verifier: InvitationTokenVerifier
+    client_credentials_issuer: ClientCredentialsIssuer
+    client_secret_verifier: ClientSecretVerifier
+    machine_token_issuer: MachineTokenIssuer
+    client_secret_grace_period: timedelta
 
 
 def _services(request: Request) -> ApiServices:
@@ -81,6 +92,22 @@ async def get_invitation_token_verifier(request: Request) -> InvitationTokenVeri
     return _services(request).invitation_token_verifier
 
 
+async def get_client_credentials_issuer(request: Request) -> ClientCredentialsIssuer:
+    return _services(request).client_credentials_issuer
+
+
+async def get_client_secret_verifier(request: Request) -> ClientSecretVerifier:
+    return _services(request).client_secret_verifier
+
+
+async def get_machine_token_issuer(request: Request) -> MachineTokenIssuer:
+    return _services(request).machine_token_issuer
+
+
+async def get_client_secret_grace_period(request: Request) -> timedelta:
+    return _services(request).client_secret_grace_period
+
+
 AsyncSessionFactoryDependency = Annotated[
     async_sessionmaker[AsyncSession], Depends(get_session_factory)
 ]
@@ -106,4 +133,16 @@ InvitationTokenIssuerDependency = Annotated[
 ]
 InvitationTokenVerifierDependency = Annotated[
     InvitationTokenVerifier, Depends(get_invitation_token_verifier)
+]
+ClientCredentialsIssuerDependency = Annotated[
+    ClientCredentialsIssuer, Depends(get_client_credentials_issuer)
+]
+ClientSecretVerifierDependency = Annotated[
+    ClientSecretVerifier, Depends(get_client_secret_verifier)
+]
+MachineTokenIssuerDependency = Annotated[
+    MachineTokenIssuer, Depends(get_machine_token_issuer)
+]
+ClientSecretGracePeriodDependency = Annotated[
+    timedelta, Depends(get_client_secret_grace_period)
 ]

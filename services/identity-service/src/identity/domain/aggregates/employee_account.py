@@ -68,9 +68,7 @@ class EmployeeAccount:
             roles=roles,
             status=EmployeeStatus.INVITED,
         )
-        employee._record_event(
-            EmployeeInvited(employee_id=employee_id, email=email)
-        )
+        employee._record_event(EmployeeInvited(employee_id=employee_id, email=email))
         return employee
 
     @classmethod
@@ -135,7 +133,6 @@ class EmployeeAccount:
 
         if not isinstance(password_hash, HashedPassword):
             raise TypeError("password_hash must be HashedPassword")
-
 
         self._password_hash = password_hash
         self._status = EmployeeStatus.ACTIVE
@@ -231,18 +228,14 @@ class EmployeeAccount:
             raise EmployeeIsInvitedError(f"Invited employee cannot {operation}")
 
         if self._status is EmployeeStatus.DEACTIVATED:
-            raise EmployeeIsDeactivatedError(
-                f"Deactivated employee cannot {operation}"
-            )
+            raise EmployeeIsDeactivatedError(f"Deactivated employee cannot {operation}")
 
         if self._status is EmployeeStatus.BLOCKED:
             raise EmployeeIsBlockedError(f"Blocked employee cannot {operation}")
 
     def _ensure_not_deactivated(self, operation: str) -> None:
         if self._status is EmployeeStatus.DEACTIVATED:
-            raise EmployeeIsDeactivatedError(
-                f"Deactivated employee cannot {operation}"
-            )
+            raise EmployeeIsDeactivatedError(f"Deactivated employee cannot {operation}")
 
     @staticmethod
     def _ensure_role_type(role: EmployeeRole) -> None:

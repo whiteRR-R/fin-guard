@@ -12,7 +12,7 @@ from identity.application.exceptions import (
     InvitationNotFoundError,
 )
 from identity.application.messages.invitation_email_requested import (
-    InvitationEmailRequested,
+    InvitationEmailRequestedMessage,
 )
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
@@ -119,7 +119,7 @@ class ReissueInvitationHandler:
                 expires_at=issued_invitation_token.expires_at,
             )
 
-            outbox_message = InvitationEmailRequested(
+            outbox_message = InvitationEmailRequestedMessage(
                 invitation_id=new_invitation_id.value,
                 recipient_email=invited_email.value,
             )

@@ -20,7 +20,7 @@ from identity.application.exceptions import (
     InvitationDeliveryError,
 )
 from identity.application.messages.invitation_email_requested import (
-    InvitationEmailRequested,
+    InvitationEmailRequestedMessage,
 )
 from identity.domain.aggregates.invitation import Invitation
 from identity.domain.enums.role import EmployeeRole
@@ -80,7 +80,7 @@ def test_invitation_is_delivered_and_accepted_without_storing_plain_token() -> N
     )
 
     message = outbox.added[0]
-    assert isinstance(message, InvitationEmailRequested)
+    assert isinstance(message, InvitationEmailRequestedMessage)
     invitation = invitations.added[0]
     sender = EmailSenderFake()
     deliver = DeliverInvitationEmail(
@@ -106,6 +106,7 @@ def test_invitation_is_delivered_and_accepted_without_storing_plain_token() -> N
         clock=clock,
         employees=employees,
         invitations=invitations,
+        outbox=OutboxRepositoryFake(),
         password_hasher=PasswordHasherStub(password_is_valid=True),
         invitation_verifier=tokens,
     )
@@ -121,7 +122,9 @@ def test_invitation_is_delivered_and_accepted_without_storing_plain_token() -> N
     assert invitation.status is InvitationStatus.ACCEPTED
 
     with pytest.raises(InvalidInvitationTokenError):
-        tokens.parse_verified(plain_token[:-1] + ("A" if plain_token[-1] != "A" else "B"))
+        tokens.parse_verified(
+            plain_token[:-1] + ("A" if plain_token[-1] != "A" else "B")
+        )
 
 
 def test_delivery_skips_revoked_invitation() -> None:
@@ -156,7 +159,7 @@ def test_delivery_skips_revoked_invitation() -> None:
 
     asyncio.run(
         deliver.execute(
-            InvitationEmailRequested(
+            InvitationEmailRequestedMessage(
                 invitation_id=invitation.id.value,
                 recipient_email=invitation.invited_email.value,
             )
@@ -193,10 +196,12 @@ def test_delivery_refuses_token_signed_with_a_different_key() -> None:
         email_sender=sender,
     )
 
-    with pytest.raises(InvitationDeliveryError, match="Invitation token does not match"):
+    with pytest.raises(
+        InvitationDeliveryError, match="Invitation token does not match"
+    ):
         asyncio.run(
             deliver.execute(
-                InvitationEmailRequested(
+                InvitationEmailRequestedMessage(
                     invitation_id=invitation.id.value,
                     recipient_email=invitation.invited_email.value,
                 )

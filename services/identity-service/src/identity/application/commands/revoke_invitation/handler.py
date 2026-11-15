@@ -7,7 +7,7 @@ from identity.application.exceptions import (
     EmployeeNotActiveError,
     InvitationNotFoundError,
 )
-from identity.application.messages.invitation_revoked import InvitationRevoked
+from identity.application.messages.invitation_revoked import InvitationRevokedMessage
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
@@ -64,7 +64,7 @@ class RevokeInvitationHandler:
 
             await self._invitations.save(invitation)
             await self._outbox.add(
-                InvitationRevoked(
+                InvitationRevokedMessage(
                     invitation_id=invitation.id.value,
                     actor_id=actor.id.value,
                     created_at=now,

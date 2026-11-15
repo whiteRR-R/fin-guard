@@ -41,6 +41,7 @@ async def get_employee_handler(
 async def get_block_employee_handler(
     session: AsyncSessionDependency,
     employees: EmployeeRepositoryDependency,
+    outbox: OutboxRepositoryDependency,
     refresh_sessions: RefreshSessionRepositoryDependency,
     clock: ClockDependency,
 ) -> BlockEmployeeHandler:
@@ -49,16 +50,21 @@ async def get_block_employee_handler(
         employees=employees,
         refresh_sessions=refresh_sessions,
         clock=clock,
+        outbox=outbox,
         block_policy=EmployeeBlockPolicy(),
     )
 
 
 async def get_unblock_employee_handler(
     session: AsyncSessionDependency,
+    outbox: OutboxRepositoryDependency,
     employees: EmployeeRepositoryDependency,
+    clock: ClockDependency,
 ) -> UnblockEmployeeHandler:
     return UnblockEmployeeHandler(
         uow=SqlAlchemyUnitOfWork(session),
+        clock=clock,
+        outbox=outbox,
         employees=employees,
         unblock_policy=EmployeeUnblockPolicy(),
     )

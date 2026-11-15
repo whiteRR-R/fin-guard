@@ -13,7 +13,7 @@ from identity.application.exceptions import (
     SessionNotFoundError,
 )
 from identity.application.messages.refresh_token_reuse_detected import (
-    RefreshTokenReuseDetected,
+    RefreshTokenReuseDetectedMessage,
 )
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
@@ -105,7 +105,7 @@ class RefreshAccessTokenHandler:
                     raise InvalidRefreshTokenError("Invalid refresh token")
 
                 session.revoke(now)
-                outbox_message = RefreshTokenReuseDetected(
+                outbox_message = RefreshTokenReuseDetectedMessage(
                     session_id=session.id.value,
                     employee_id=employee.id.value,
                     created_at=now,

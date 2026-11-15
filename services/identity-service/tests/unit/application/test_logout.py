@@ -23,7 +23,7 @@ from identity.application.exceptions import (
     SessionNotFoundError,
 )
 from identity.application.messages.base import OutboxMessage
-from identity.application.messages.session_logged_out import SessionLoggedOut
+from identity.application.messages.session_logged_out import SessionLoggedOutMessage
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
@@ -161,8 +161,8 @@ def test_logout_revokes_only_current_session_and_records_audit(
     assert context.uow.rollback_count == 0
     context.verifier.verify.assert_not_called()
     context.sessions.get_by_id_with_lock.assert_awaited_once_with(context.session_id)
-    message, = context.store.state.messages
-    assert isinstance(message, SessionLoggedOut)
+    (message,) = context.store.state.messages
+    assert isinstance(message, SessionLoggedOutMessage)
     assert message.employee_id == context.employee.id.value
     assert message.session_id == context.session_id.value
     assert message.created_at == NOW

@@ -22,9 +22,7 @@ class EmployeeDeletionPolicy:
             )
 
         if actor.id == target.id:
-            raise EmployeeDeletionNotAllowedError(
-                "Administrator cannot delete itself"
-            )
+            raise EmployeeDeletionNotAllowedError("Administrator cannot delete itself")
 
         if EmployeeRole.ADMIN in target.roles:
             raise EmployeeDeletionNotAllowedError(

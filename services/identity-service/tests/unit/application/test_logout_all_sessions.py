@@ -25,7 +25,9 @@ from identity.application.exceptions import (
     EmployeeNotFoundError,
     SessionIsNotActiveError,
 )
-from identity.application.messages.all_sessions_logged_out import AllSessionsLoggedOut
+from identity.application.messages.all_sessions_logged_out import (
+    AllSessionsLoggedOutMessage,
+)
 from identity.application.messages.base import OutboxMessage
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
@@ -135,7 +137,7 @@ def test_revokes_all_own_sessions_and_preserves_other_employees_sessions(
     assert context.uow.commit_count == 1
     assert context.uow.rollback_count == 0
     (message,) = context.store.state.messages
-    assert isinstance(message, AllSessionsLoggedOut)
+    assert isinstance(message, AllSessionsLoggedOutMessage)
     assert message.employee_id == context.employee.id.value
     assert message.revoked_sessions_count == 2
     assert message.created_at == NOW
@@ -157,7 +159,7 @@ def test_expired_and_revoked_sessions_are_not_modified(
     assert revoked.revoked_at == revoked_at
     assert context.sessions.save.await_count == 2
     (message,) = context.store.state.messages
-    assert isinstance(message, AllSessionsLoggedOut)
+    assert isinstance(message, AllSessionsLoggedOutMessage)
     assert message.revoked_sessions_count == 2
 
 
@@ -228,8 +230,7 @@ def test_failure_rolls_back_all_revocations_and_audit(
         context.execute()
 
     assert all(
-        session.revoked_at is None
-        for session in context.store.state.sessions.values()
+        session.revoked_at is None for session in context.store.state.sessions.values()
     )
     assert context.store.state.messages == []
     assert context.uow.commit_count == 0
@@ -247,8 +248,8 @@ def test_command_from_authenticated_actor_revokes_current_session_too(
         roles=context.employee.roles,
         expires_at=NOW + timedelta(minutes=10),
     )
-    context.sessions.get_by_id.side_effect = (
-        lambda session_id: context.store.state.sessions.get(session_id)
+    context.sessions.get_by_id.side_effect = lambda session_id: (
+        context.store.state.sessions.get(session_id)
     )
     authenticator = AuthenticateAccessToken(
         clock=context.clock,
@@ -290,8 +291,8 @@ def test_concurrent_refresh_cannot_leave_existing_sessions_active(
             expires_at=NOW + timedelta(hours=1),
         )
         current_hash = refresh.session.refresh_token_hash
-        refresh.verifier.matches_hash.side_effect = (
-            lambda token, token_hash: token == OLD_TOKEN and token_hash == current_hash
+        refresh.verifier.matches_hash.side_effect = lambda token, token_hash: (
+            token == OLD_TOKEN and token_hash == current_hash
         )
         logout_request = context.handler.execute(context.command)
         refresh_request = refresh.handler.execute(RefreshAccessTokenCommand(OLD_TOKEN))

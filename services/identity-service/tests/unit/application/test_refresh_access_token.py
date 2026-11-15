@@ -17,7 +17,7 @@ from identity.application.exceptions import (
     SessionNotFoundError,
 )
 from identity.application.messages.refresh_token_reuse_detected import (
-    RefreshTokenReuseDetected,
+    RefreshTokenReuseDetectedMessage,
 )
 from identity.application.ports.security.refresh_token_issuer import IssuedRefreshToken
 from identity.application.ports.security.refresh_token_verifier import (
@@ -186,8 +186,8 @@ def test_old_token_reuse_commits_revocation_and_audit_before_raising(
     context.access_issuer.issue.assert_called_once()
     context.refresh_issuer.issue.assert_called_once()
 
-    message, = context.store.state.messages
-    assert isinstance(message, RefreshTokenReuseDetected)
+    (message,) = context.store.state.messages
+    assert isinstance(message, RefreshTokenReuseDetectedMessage)
     assert message.session_id == context.session_id.value
     assert message.employee_id == context.employee.id.value
     assert message.created_at == NOW
