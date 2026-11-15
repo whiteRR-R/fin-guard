@@ -169,5 +169,5 @@ def test_public_registration_route_is_absent() -> None:
     paths = app.openapi()["paths"]
     assert "/register" not in paths
     assert "/api/v1/register" not in paths
-    assert all(path.startswith("/api/v1/") for path in paths)
+    assert all(path.startswith(("/api/v1/", "/health/")) for path in paths)
     assert "/api/v2/auth/login" not in paths

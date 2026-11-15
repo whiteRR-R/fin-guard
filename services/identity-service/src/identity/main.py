@@ -23,6 +23,7 @@ from identity.application.ports.security.refresh_token_verifier import (
 )
 from identity.presentation.api.dependencies.services import ApiServices
 from identity.presentation.api.errors import install_error_handlers
+from identity.presentation.api.health import router as health_router
 from identity.presentation.api.v1.router import router as v1_router
 
 
@@ -54,5 +55,6 @@ def create_app(
         invitation_token_issuer=invitation_token_issuer,
         invitation_token_verifier=invitation_token_verifier,
     )
+    app.include_router(health_router)
     app.include_router(v1_router)
     return app
