@@ -14,7 +14,11 @@ def test_invitation_routes_require_authentication_for_administration() -> None:
     invitation_id = uuid4()
 
     for method, path, body in (
-        ("POST", "/api/v1/invitations", {"email": "new@example.com", "roles": ["AUDITOR"]}),
+        (
+            "POST",
+            "/api/v1/invitations",
+            {"email": "new@example.com", "roles": ["AUDITOR"]},
+        ),
         ("POST", "/api/v1/invitations/reissue", {"email": "new@example.com"}),
         ("DELETE", f"/api/v1/invitations/{invitation_id}", None),
     ):

@@ -1,1 +1,0 @@
-"""Identity domain model."""

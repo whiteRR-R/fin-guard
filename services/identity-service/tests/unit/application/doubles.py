@@ -121,9 +121,7 @@ class EmployeeRepositoryFake:
 
 class InvitationRepositoryFake:
     def __init__(self, invitations: Iterable[Invitation] = ()) -> None:
-        self._invitations = {
-            invitation.id: invitation for invitation in invitations
-        }
+        self._invitations = {invitation.id: invitation for invitation in invitations}
         self.requested_employee_emails: list[Email] = []
         self.locked_ids: list[InvitationId] = []
         self.added: list[Invitation] = []
@@ -271,9 +269,7 @@ class PasswordHasherStub:
     ) -> None:
         self._password_is_valid = password_is_valid
         self._hash_result = hash_result or HashedPassword("new-password-hash")
-        self._verify_results = (
-            None if verify_results is None else iter(verify_results)
-        )
+        self._verify_results = None if verify_results is None else iter(verify_results)
         self.verify_calls: list[tuple[Password, HashedPassword]] = []
         self.hash_calls: list[Password] = []
 

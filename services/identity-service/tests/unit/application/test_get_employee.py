@@ -106,7 +106,9 @@ def test_inactive_actor_is_rejected_before_employee_lookup(
     employee: EmployeeAccount,
     status: EmployeeStatus,
 ) -> None:
-    actor = make_employee("actor@example.com", roles=(EmployeeRole.ADMIN,), status=status)
+    actor = make_employee(
+        "actor@example.com", roles=(EmployeeRole.ADMIN,), status=status
+    )
     handler, repository, uow = make_handler(actor, employee)
 
     with pytest.raises(EmployeeNotActiveError):
@@ -158,7 +160,9 @@ def test_missing_target_returns_employee_not_found() -> None:
 
 
 @pytest.mark.parametrize("status", list(EmployeeStatus))
-def test_authorized_actor_can_view_employee_in_any_status(status: EmployeeStatus) -> None:
+def test_authorized_actor_can_view_employee_in_any_status(
+    status: EmployeeStatus,
+) -> None:
     actor = make_employee("actor@example.com", roles=(EmployeeRole.ADMIN,))
     employee = make_employee("employee@example.com", status=status)
     handler, repository, uow = make_handler(actor, employee)

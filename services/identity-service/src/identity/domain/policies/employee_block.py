@@ -17,14 +17,10 @@ class EmployeeBlockPolicy:
             )
 
         if EmployeeRole.ADMIN not in actor.roles:
-            raise EmployeeBlockNotAllowedError(
-                "Only administrator can block employees"
-            )
+            raise EmployeeBlockNotAllowedError("Only administrator can block employees")
 
         if actor.id == target.id:
-            raise EmployeeBlockNotAllowedError(
-                "Administrator cannot block itself"
-            )
+            raise EmployeeBlockNotAllowedError("Administrator cannot block itself")
 
         if EmployeeRole.ADMIN in target.roles:
             raise EmployeeBlockNotAllowedError(

@@ -6,4 +6,3 @@ from uuid import UUID
 class InviteEmployeeResult:
     invitation_id: UUID
     employee_id: UUID
-    

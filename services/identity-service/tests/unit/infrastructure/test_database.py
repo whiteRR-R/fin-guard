@@ -38,10 +38,14 @@ def database_settings_cache() -> Iterator[None]:
 def test_database_settings_factory_caches_until_reset(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity")
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity"
+    )
     settings = get_database_settings()
 
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/another")
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/another"
+    )
 
     assert get_database_settings() is settings
     assert settings.database_url.get_secret_value() == (
@@ -57,8 +61,12 @@ def test_database_settings_factory_caches_until_reset(
     )
 
 
-def test_database_settings_read_url_from_environment(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity")
+def test_database_settings_read_url_from_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity"
+    )
 
     settings = DatabaseSettings()
 
@@ -104,7 +112,9 @@ def test_database_engine_rejects_malformed_url(
 
 
 def test_database_engine_and_session_factory(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity")
+    monkeypatch.setenv(
+        "DATABASE_URL", "postgresql+asyncpg://user:secret@localhost/identity"
+    )
     engine = create_database_engine(DatabaseSettings())
     session_factory = create_session_factory(engine)
     session = session_factory()
@@ -133,7 +143,10 @@ def test_alembic_upgrade_and_downgrade_with_shared_connection(
             config.attributes["connection"] = connection
 
             command.upgrade(config, "b7c84a19d5e2")
-            assert MigrationContext.configure(connection).get_current_revision() == "b7c84a19d5e2"
+            assert (
+                MigrationContext.configure(connection).get_current_revision()
+                == "b7c84a19d5e2"
+            )
 
             command.downgrade(config, "base")
             assert MigrationContext.configure(connection).get_current_revision() is None

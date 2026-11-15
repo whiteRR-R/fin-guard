@@ -108,7 +108,9 @@ def test_unprivileged_actor_is_rejected_before_listing(
     [EmployeeStatus.INVITED, EmployeeStatus.BLOCKED, EmployeeStatus.DEACTIVATED],
 )
 def test_inactive_admin_is_rejected_before_listing(status: EmployeeStatus) -> None:
-    actor = make_employee("actor@example.com", roles=(EmployeeRole.ADMIN,), status=status)
+    actor = make_employee(
+        "actor@example.com", roles=(EmployeeRole.ADMIN,), status=status
+    )
     handler, repository, uow = make_handler(actor)
 
     with pytest.raises(EmployeeNotActiveError):
@@ -122,7 +124,9 @@ def test_missing_actor_is_rejected_before_listing() -> None:
     handler, repository, uow = make_handler()
 
     with pytest.raises(AuthenticationError):
-        asyncio.run(handler.execute(ListEmployeesQuery(actor_id=EmployeeId.new().value)))
+        asyncio.run(
+            handler.execute(ListEmployeesQuery(actor_id=EmployeeId.new().value))
+        )
 
     assert repository.requested_pages == []
     assert uow.commit_count == 0
@@ -209,7 +213,9 @@ def test_pages_cover_all_employees_without_duplicates(
             result = await handler.execute(
                 ListEmployeesQuery(actor_id=admin.id.value, limit=2, offset=offset)
             )
-            employee_ids.extend(EmployeeId(item.employee_id) for item in result.employees)
+            employee_ids.extend(
+                EmployeeId(item.employee_id) for item in result.employees
+            )
         return employee_ids
 
     employee_ids = asyncio.run(read_pages())

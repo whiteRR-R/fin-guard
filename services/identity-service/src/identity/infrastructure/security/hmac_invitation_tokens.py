@@ -43,7 +43,11 @@ class HmacInvitationTokens:
             raise TypeError("invitation_id must be InvitationId")
         identifier = invitation_id.value.bytes
         signature = hmac.digest(self._signing_key, identifier, "sha256")
-        return base64.urlsafe_b64encode(identifier + signature).rstrip(b"=").decode("ascii")
+        return (
+            base64.urlsafe_b64encode(identifier + signature)
+            .rstrip(b"=")
+            .decode("ascii")
+        )
 
     def parse_verified(self, token: str) -> InvitationTokenClaims:
         if not isinstance(token, str) or not token:

@@ -6,7 +6,6 @@ from identity.infrastructure.persistence.models.employee import EmployeeModel
 
 
 class EmployeeMapper:
-
     @staticmethod
     def to_domain(model: EmployeeModel) -> EmployeeAccount:
         password_hash = (

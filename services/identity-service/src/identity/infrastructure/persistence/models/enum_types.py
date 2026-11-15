@@ -1,4 +1,3 @@
-
 from sqlalchemy import Enum
 
 from identity.domain.enums.role import EmployeeRole
@@ -18,7 +17,7 @@ employee_status_type = Enum(
     name="employee_status",
     metadata=Base.metadata,
     native_enum=True,
-    validate_strings=True
+    validate_strings=True,
 )
 
 invitation_status_type = Enum(
@@ -26,5 +25,5 @@ invitation_status_type = Enum(
     name="invitation_status",
     metadata=Base.metadata,
     native_enum=True,
-    validate_strings=True
+    validate_strings=True,
 )

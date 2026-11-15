@@ -1,5 +1,3 @@
-"""Add retry scheduling for outbox delivery."""
-
 import sqlalchemy as sa
 from alembic import op
 

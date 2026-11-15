@@ -1,1 +1,0 @@
-"""Identity Service test suite."""

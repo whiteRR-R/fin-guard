@@ -1,5 +1,3 @@
-"""Create employee, invitation, and session tables."""
-
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
@@ -69,7 +67,9 @@ def upgrade() -> None:
         sa.Column("expires_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("accepted_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("revoked_at", sa.DateTime(timezone=True), nullable=True),
-        sa.CheckConstraint("cardinality(roles) > 0", name="ck_invitation_roles_nonempty"),
+        sa.CheckConstraint(
+            "cardinality(roles) > 0", name="ck_invitation_roles_nonempty"
+        ),
         sa.ForeignKeyConstraint(["invited_by"], ["employee.id"]),
         sa.PrimaryKeyConstraint("id"),
     )

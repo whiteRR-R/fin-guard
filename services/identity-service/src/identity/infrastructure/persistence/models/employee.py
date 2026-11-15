@@ -36,4 +36,5 @@ class EmployeeModel(Base):
         back_populates="employee",
     )
 
+
 Index("uq_employee_email_lower", func.lower(EmployeeModel.email), unique=True)

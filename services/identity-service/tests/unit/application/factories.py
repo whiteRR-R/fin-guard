@@ -21,9 +21,7 @@ def make_employee(
     status: EmployeeStatus = EmployeeStatus.ACTIVE,
 ) -> EmployeeAccount:
     password_hash = (
-        None
-        if status is EmployeeStatus.INVITED
-        else HashedPassword("password-hash")
+        None if status is EmployeeStatus.INVITED else HashedPassword("password-hash")
     )
     return EmployeeAccount.restore(
         employee_id=EmployeeId.new(),

@@ -11,8 +11,7 @@ class InvitationTokenClaims:
 
 
 class InvitationTokenVerifier(Protocol):
-    def parse_verified(self, token: str) -> InvitationTokenClaims:
-        ...
+    def parse_verified(self, token: str) -> InvitationTokenClaims: ...
 
     def matches_hash(
         self, plain_token: str, expected_hash: InvitationTokenHash
