@@ -16,6 +16,9 @@ from identity.infrastructure.persistence.repositories.outbox_repository import (
 from identity.infrastructure.persistence.repositories.refresh_session_repository import (
     RefreshSessionRepository,
 )
+from identity.infrastructure.persistence.repositories.service_account_repository import (
+    ServiceAccountRepository,
+)
 from identity.presentation.api.dependencies.services import (
     AsyncSessionFactoryDependency,
 )
@@ -49,6 +52,12 @@ async def get_refresh_session_repository(
     return RefreshSessionRepository(session)
 
 
+async def get_service_account_repository(
+    session: AsyncSessionDependency,
+) -> ServiceAccountRepository:
+    return ServiceAccountRepository(session)
+
+
 async def get_outbox_repository(session: AsyncSessionDependency) -> OutboxRepository:
     return OutboxRepository(session)
 
@@ -63,3 +72,6 @@ RefreshSessionRepositoryDependency = Annotated[
     RefreshSessionRepository, Depends(get_refresh_session_repository)
 ]
 OutboxRepositoryDependency = Annotated[OutboxRepository, Depends(get_outbox_repository)]
+ServiceAccountRepositoryDependency = Annotated[
+    ServiceAccountRepository, Depends(get_service_account_repository)
+]

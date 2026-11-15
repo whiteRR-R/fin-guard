@@ -15,9 +15,11 @@ from identity.application.exceptions import (
     InvalidEmployeeStateError,
     InvalidPaginationError,
     InvalidPasswordError,
+    InvalidScopeError,
     InvitationCannotBeReissuedError,
     InvitationNotFoundError,
     LastActiveAdminError,
+    ServiceAccountNotFoundError,
     SessionNotFoundError,
 )
 from identity.application.exceptions import (
@@ -29,6 +31,7 @@ from identity.domain.exceptions import (
     EmployeeInviteNotAllowedError,
     InvitationExpiredError,
     PasswordValidationError,
+    ServiceAccountValidationError,
 )
 
 
@@ -45,7 +48,12 @@ def install_error_handlers(app: FastAPI) -> None:
             )
         if isinstance(
             error,
-            (EmployeeNotFoundError, InvitationNotFoundError, SessionNotFoundError),
+            (
+                EmployeeNotFoundError,
+                InvitationNotFoundError,
+                ServiceAccountNotFoundError,
+                SessionNotFoundError,
+            ),
         ):
             status_code = 404
         elif isinstance(error, (AccessDeniedError, EmployeeNotActiveError)):
@@ -70,6 +78,7 @@ def install_error_handlers(app: FastAPI) -> None:
                 InvalidEmailError,
                 InvalidPaginationError,
                 InvalidPasswordError,
+                InvalidScopeError,
             ),
         ):
             status_code = 422
@@ -79,7 +88,14 @@ def install_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(DomainException)
     async def domain_error(request: Request, error: DomainException) -> JSONResponse:
-        if isinstance(error, (EmailValidationError, PasswordValidationError)):
+        if isinstance(
+            error,
+            (
+                EmailValidationError,
+                PasswordValidationError,
+                ServiceAccountValidationError,
+            ),
+        ):
             status_code = 422
         elif isinstance(error, EmployeeInviteNotAllowedError):
             status_code = 403

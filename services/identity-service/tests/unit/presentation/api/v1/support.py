@@ -26,12 +26,18 @@ from identity.infrastructure.persistence.models.session import SessionModel
 from identity.infrastructure.persistence.models.used_refresh_token import (
     UsedRefreshTokenModel,
 )
+from identity.infrastructure.security.hmac_client_credentials import (
+    HmacClientCredentials,
+)
 from identity.infrastructure.security.hmac_invitation_tokens import HmacInvitationTokens
+from identity.infrastructure.security.jwt_machine_tokens import JwtMachineTokens
 from identity.main import create_app
 
 NOW = datetime(2026, 10, 21, 12, 0, tzinfo=timezone.utc)
 EMPLOYEE_ID = EmployeeId(uuid4())
 SESSION_ID = RefreshSessionId(uuid4())
+CLIENT_SECRET_HASH_KEY = b"test-client-secret-hash-key-32-bytes"
+MACHINE_SIGNING_KEY = b"test-machine-token-signing-key-32b"
 
 
 class FixedClock:
@@ -156,6 +162,7 @@ class FakeSession:
 def make_app(session: FakeSession):
     access_tokens = AccessTokens()
     refresh_tokens = RefreshTokens()
+    client_credentials = HmacClientCredentials(CLIENT_SECRET_HASH_KEY)
     invitation_tokens = HmacInvitationTokens(
         signing_key=b"test-invitation-signing-key-32-bytes",
         lifetime=timedelta(days=7),
@@ -171,6 +178,16 @@ def make_app(session: FakeSession):
         refresh_token_lifetime=timedelta(days=30),
         invitation_token_issuer=invitation_tokens,
         invitation_token_verifier=invitation_tokens,
+        client_credentials_issuer=client_credentials,
+        client_secret_verifier=client_credentials,
+        machine_token_issuer=JwtMachineTokens(
+            signing_key=MACHINE_SIGNING_KEY,
+            lifetime=timedelta(minutes=15),
+            issuer="identity-service",
+            audience="finguard-api",
+            clock=FixedClock(),
+        ),
+        client_secret_grace_period=timedelta(hours=24),
     )
 
 

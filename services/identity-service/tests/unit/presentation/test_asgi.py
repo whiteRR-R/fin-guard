@@ -1,9 +1,10 @@
 import asyncio
+from datetime import timedelta
 from typing import cast
 
 import pytest
 from fastapi import FastAPI
-from pydantic import SecretStr
+from pydantic import SecretStr, ValidationError
 from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.sql.elements import TextClause
 
@@ -12,10 +13,14 @@ from identity.infrastructure.config import DatabaseSettings
 from identity.infrastructure.security.bcrypt_password_hasher import (
     BcryptPasswordHasher,
 )
+from identity.infrastructure.security.hmac_client_credentials import (
+    HmacClientCredentials,
+)
 from identity.infrastructure.security.hmac_invitation_tokens import (
     HmacInvitationTokens,
 )
 from identity.infrastructure.security.jwt_access_tokens import JwtAccessTokens
+from identity.infrastructure.security.jwt_machine_tokens import JwtMachineTokens
 from identity.infrastructure.security.jwt_refresh_tokens import JwtRefreshTokens
 from identity.presentation.api.dependencies.services import ApiServices
 
@@ -26,6 +31,7 @@ def _set_token_environment(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("INVITATION_SIGNING_KEY", "c" * 32)
     monkeypatch.setenv("TOKEN_ISSUER", "identity-service")
     monkeypatch.setenv("TOKEN_AUDIENCE", "finguard-api")
+    monkeypatch.setenv("CLIENT_SECRET_HASH_KEY", "d" * 32)
 
 
 def test_create_application_wires_real_adapters_and_routes(
@@ -51,7 +57,14 @@ def test_create_application_wires_real_adapters_and_routes(
     assert isinstance(services.refresh_token_issuer, JwtRefreshTokens)
     assert isinstance(services.invitation_token_issuer, HmacInvitationTokens)
     assert services.invitation_token_issuer is services.invitation_token_verifier
-    assert "/api/v1/auth/login" in app.openapi()["paths"]
+    assert isinstance(services.client_credentials_issuer, HmacClientCredentials)
+    assert services.client_credentials_issuer is services.client_secret_verifier
+    assert isinstance(services.machine_token_issuer, JwtMachineTokens)
+    assert services.client_secret_grace_period == timedelta(hours=24)
+    paths = app.openapi()["paths"]
+    assert "/api/v1/auth/login" in paths
+    assert "/api/v1/service-accounts" in paths
+    assert "/api/v1/oauth/token" in paths
 
     asyncio.run(cast(AsyncEngine, app.state.identity_engine).dispose())
 
@@ -135,3 +148,27 @@ def test_lifespan_disposes_engine_when_database_is_unavailable() -> None:
         asyncio.run(run())
 
     assert engine.disposals == 1
+
+
+def test_create_application_requires_client_secret_hash_key(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _set_token_environment(monkeypatch)
+    monkeypatch.delenv("CLIENT_SECRET_HASH_KEY")
+    monkeypatch.setattr(
+        asgi,
+        "get_database_settings",
+        lambda: DatabaseSettings(
+            database_url=SecretStr(
+                "postgresql+asyncpg://user:secret@localhost/identity"
+            )
+        ),
+    )
+    monkeypatch.setattr(
+        asgi.ServiceAccountSettings,
+        "model_config",
+        {**asgi.ServiceAccountSettings.model_config, "env_file": None},
+    )
+
+    with pytest.raises(ValidationError, match="client_secret_hash_key"):
+        asgi.create_application()

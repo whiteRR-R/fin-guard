@@ -10,11 +10,18 @@ from identity.application.ports.security.access_token_issuer import AccessTokenI
 from identity.application.ports.security.access_token_verifier import (
     AccessTokenVerifier,
 )
+from identity.application.ports.security.client_credentials import (
+    ClientCredentialsIssuer,
+    ClientSecretVerifier,
+)
 from identity.application.ports.security.invitation_token_issuer import (
     InvitationTokenIssuer,
 )
 from identity.application.ports.security.invitation_token_verifier import (
     InvitationTokenVerifier,
+)
+from identity.application.ports.security.machine_token_issuer import (
+    MachineTokenIssuer,
 )
 from identity.application.ports.security.password_hasher import PasswordHasher
 from identity.application.ports.security.refresh_token_issuer import RefreshTokenIssuer
@@ -39,6 +46,10 @@ def create_app(
     refresh_token_lifetime: timedelta,
     invitation_token_issuer: InvitationTokenIssuer,
     invitation_token_verifier: InvitationTokenVerifier,
+    client_credentials_issuer: ClientCredentialsIssuer,
+    client_secret_verifier: ClientSecretVerifier,
+    machine_token_issuer: MachineTokenIssuer,
+    client_secret_grace_period: timedelta,
     lifespan: Callable[[FastAPI], AbstractAsyncContextManager[None]] | None = None,
 ) -> FastAPI:
     app = FastAPI(title="FinGuard Identity Service", lifespan=lifespan)
@@ -54,6 +65,10 @@ def create_app(
         refresh_token_lifetime=refresh_token_lifetime,
         invitation_token_issuer=invitation_token_issuer,
         invitation_token_verifier=invitation_token_verifier,
+        client_credentials_issuer=client_credentials_issuer,
+        client_secret_verifier=client_secret_verifier,
+        machine_token_issuer=machine_token_issuer,
+        client_secret_grace_period=client_secret_grace_period,
     )
     app.include_router(health_router)
     app.include_router(v1_router)
