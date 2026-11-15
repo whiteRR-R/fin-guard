@@ -6,6 +6,7 @@ from identity.application.exceptions import (
     InvalidInvitationTokenError,
     InvitationNotFoundError,
 )
+from identity.application.messages.invitation_accepted import InvitationAcceptedMessage
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
@@ -13,6 +14,7 @@ from identity.application.ports.repositories.employee_repository import (
 from identity.application.ports.repositories.invitation_repository import (
     InvitationRepository,
 )
+from identity.application.ports.repositories.outbox_repository import OutboxRepository
 from identity.application.ports.security.invitation_token_verifier import (
     InvitationTokenVerifier,
 )
@@ -29,6 +31,7 @@ class AcceptInvitationHandler:
         clock: Clock,
         employees: EmployeeRepository,
         invitations: InvitationRepository,
+        outbox: OutboxRepository,
         password_hasher: PasswordHasher,
         invitation_verifier: InvitationTokenVerifier,
     ) -> None:
@@ -37,6 +40,7 @@ class AcceptInvitationHandler:
         self._clock = clock
         self._employees = employees
         self._invitations = invitations
+        self._outbox = outbox
         self._password_hasher = password_hasher
         self._invitation_verifier = invitation_verifier
 
@@ -48,7 +52,9 @@ class AcceptInvitationHandler:
         password = Password(command.password)
 
         async with self._uow:
-            existing_invitation = await self._invitations.get_by_id_with_lock(invitation_id)
+            existing_invitation = await self._invitations.get_by_id_with_lock(
+                invitation_id
+            )
 
             if existing_invitation is None:
                 raise InvitationNotFoundError("Invitation not found")
@@ -73,5 +79,12 @@ class AcceptInvitationHandler:
 
             await self._invitations.save(existing_invitation)
             await self._employees.save(existing_employee)
+            await self._outbox.add(
+                InvitationAcceptedMessage(
+                    invitation_id=existing_invitation.id.value,
+                    employee_id=existing_employee.id.value,
+                    created_at=now,
+                )
+            )
 
             await self._uow.commit()

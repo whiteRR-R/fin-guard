@@ -8,7 +8,7 @@ from identity.application.commands.reissue_invitation.handler import (
     ReissueInvitationHandler,
 )
 from identity.application.messages.invitation_email_requested import (
-    InvitationEmailRequested,
+    InvitationEmailRequestedMessage,
 )
 from identity.application.ports.security.invitation_token_issuer import (
     IssuedInvitationToken,
@@ -115,7 +115,7 @@ def test_reissue_expired_invitation_saves_new_invitation_and_outbox() -> None:
     assert token_issuer.calls == [(invitation.id, NOW)]
     assert len(outbox.added) == 1
     message = outbox.added[0]
-    assert isinstance(message, InvitationEmailRequested)
+    assert isinstance(message, InvitationEmailRequestedMessage)
     assert message.invitation_id == invitation.id.value
     assert message.recipient_email == invited_employee.email.value
     assert not hasattr(message, "invitation_token")

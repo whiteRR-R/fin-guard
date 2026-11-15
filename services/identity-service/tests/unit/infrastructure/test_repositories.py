@@ -5,9 +5,11 @@ from uuid import uuid4
 
 from sqlalchemy.dialects import postgresql
 
-from identity.application.messages.employee_role_assigned import EmployeeRoleAssigned
+from identity.application.messages.employee_role_assigned import (
+    EmployeeRoleAssignedMessage,
+)
 from identity.application.messages.invitation_email_requested import (
-    InvitationEmailRequested,
+    InvitationEmailRequestedMessage,
 )
 from identity.domain.aggregates.employee_account import EmployeeAccount
 from identity.domain.aggregates.invitation import Invitation
@@ -135,12 +137,8 @@ def test_invitation_mapper_round_trip_and_latest_query():
     assert "lower(invitation.invited_email)" in _sql(statement)
     assert "created_at desc" in _sql(statement)
     assert "for update" in _sql(statement)
-    assert "pg_advisory_xact_lock" in str(
-        repository_session.execute.call_args.args[0]
-    )
-    assert repository_session.execute.call_args.args[1] == {
-        "email": "user@example.com"
-    }
+    assert "pg_advisory_xact_lock" in str(repository_session.execute.call_args.args[0])
+    assert repository_session.execute.call_args.args[1] == {"email": "user@example.com"}
 
     invitation.accept(now + timedelta(hours=1))
     asyncio.run(repository.save(invitation))
@@ -197,14 +195,12 @@ def test_refresh_session_repository_persists_rotation_and_history():
 def test_bootstrap_claim_and_outbox_serialization():
     repository_session = _session()
     repository_session.scalar.return_value = True
-    assert asyncio.run(
-        BootstrapRepository(repository_session).try_claim_first_admin()
-    )
+    assert asyncio.run(BootstrapRepository(repository_session).try_claim_first_admin())
     assert "pg_try_advisory_xact_lock" in str(
         repository_session.scalar.call_args.args[0]
     )
 
-    message = EmployeeRoleAssigned(
+    message = EmployeeRoleAssignedMessage(
         employee_id=uuid4(), actor_id=uuid4(), role=EmployeeRole.ADMIN
     )
     asyncio.run(OutboxRepository(repository_session).add(message))
@@ -217,7 +213,7 @@ def test_bootstrap_claim_and_outbox_serialization():
         "role": "ADMIN",
     }
 
-    invitation_message = InvitationEmailRequested(
+    invitation_message = InvitationEmailRequestedMessage(
         invitation_id=uuid4(), recipient_email="user@example.com"
     )
     asyncio.run(OutboxRepository(repository_session).add(invitation_message))

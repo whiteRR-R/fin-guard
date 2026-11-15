@@ -1,4 +1,5 @@
 from dataclasses import fields
+from datetime import datetime
 from enum import Enum
 from uuid import UUID
 
@@ -13,6 +14,8 @@ def _json_value(value: object) -> object:
         return str(value)
     if isinstance(value, Enum):
         return value.value
+    if isinstance(value, datetime):
+        return value.isoformat()
     if isinstance(value, (list, tuple)):
         return [_json_value(item) for item in value]
     if isinstance(value, dict):
@@ -33,7 +36,7 @@ class OutboxRepository:
         self._session.add(
             OutboxMessageModel(
                 message_id=outbox_message.message_id,
-                message_type=type(outbox_message).__name__,
+                message_type=outbox_message.message_type,
                 version=getattr(outbox_message, "version", 1),
                 payload=payload,
                 created_at=outbox_message.created_at,

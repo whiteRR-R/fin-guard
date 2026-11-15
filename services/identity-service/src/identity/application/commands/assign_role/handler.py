@@ -5,7 +5,9 @@ from identity.application.exceptions import (
     EmployeeNotActiveError,
     EmployeeNotFoundError,
 )
-from identity.application.messages.employee_role_assigned import EmployeeRoleAssigned
+from identity.application.messages.employee_role_assigned import (
+    EmployeeRoleAssignedMessage,
+)
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
@@ -61,7 +63,7 @@ class AssignRoleHandler:
 
             await self._employees.save(employee)
             await self._outbox.add(
-                EmployeeRoleAssigned(
+                EmployeeRoleAssignedMessage(
                     employee_id=employee.id.value,
                     actor_id=actor.id.value,
                     role=command.role,

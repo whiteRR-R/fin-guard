@@ -9,7 +9,7 @@ from sqlalchemy.dialects import postgresql
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from identity.application.messages.invitation_email_requested import (
-    InvitationEmailRequested,
+    InvitationEmailRequestedMessage,
 )
 from identity.domain.aggregates.invitation import Invitation
 from identity.domain.enums.role import EmployeeRole
@@ -147,7 +147,7 @@ def make_records() -> tuple[OutboxMessageModel, InvitationModel]:
     )
     row = OutboxMessageModel(
         message_id=uuid4(),
-        message_type=InvitationEmailRequested.__name__,
+        message_type=InvitationEmailRequestedMessage.message_type,
         version=1,
         payload={
             "invitation_id": str(invitation_id.value),

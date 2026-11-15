@@ -6,7 +6,9 @@ from identity.application.exceptions import (
     EmployeeNotFoundError,
     LastActiveAdminError,
 )
-from identity.application.messages.employee_role_revoked import EmployeeRoleRevoked
+from identity.application.messages.employee_role_revoked import (
+    EmployeeRoleRevokedMessage,
+)
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
@@ -70,7 +72,7 @@ class RevokeRoleHandler:
 
             await self._employees.save(employee)
             await self._outbox.add(
-                EmployeeRoleRevoked(
+                EmployeeRoleRevokedMessage(
                     employee_id=employee.id.value,
                     actor_id=actor.id.value,
                     role=command.role,

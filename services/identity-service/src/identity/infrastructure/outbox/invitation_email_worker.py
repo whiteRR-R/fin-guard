@@ -10,7 +10,7 @@ from identity.application.email_delivery.deliver_invitation_email import (
     DeliverInvitationEmail,
 )
 from identity.application.messages.invitation_email_requested import (
-    InvitationEmailRequested,
+    InvitationEmailRequestedMessage,
 )
 from identity.application.ports.clock import Clock
 from identity.application.ports.email_sender import EmailSender
@@ -56,7 +56,7 @@ class InvitationEmailWorker:
                 select(OutboxMessageModel)
                 .where(
                     OutboxMessageModel.message_type
-                    == InvitationEmailRequested.__name__,
+                    == InvitationEmailRequestedMessage.message_type,
                     OutboxMessageModel.version == 1,
                     OutboxMessageModel.published_at.is_(None),
                     or_(
@@ -93,9 +93,7 @@ class InvitationEmailWorker:
             row.next_attempt_at = None
             return "delivered"
 
-    async def _deliver(self, message: InvitationEmailRequested) -> None:
-        # Delivery's read-only Unit of Work rolls back on exit. A separate session
-        # keeps the outbox row locked until the delivery result is committed.
+    async def _deliver(self, message: InvitationEmailRequestedMessage) -> None:
         async with self._session_factory() as session:
             handler = DeliverInvitationEmail(
                 uow=SqlAlchemyUnitOfWork(session),
@@ -108,13 +106,13 @@ class InvitationEmailWorker:
             await handler.execute(message)
 
     @staticmethod
-    def _decode(row: OutboxMessageModel) -> InvitationEmailRequested:
+    def _decode(row: OutboxMessageModel) -> InvitationEmailRequestedMessage:
         invitation_id = row.payload.get("invitation_id")
         recipient_email = row.payload.get("recipient_email")
         if not isinstance(invitation_id, str) or not isinstance(recipient_email, str):
             raise TypeError("Invalid invitation email outbox payload")
 
-        return InvitationEmailRequested(
+        return InvitationEmailRequestedMessage(
             message_id=row.message_id,
             created_at=row.created_at,
             invitation_id=UUID(invitation_id),

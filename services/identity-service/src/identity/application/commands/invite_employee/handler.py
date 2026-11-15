@@ -5,7 +5,7 @@ from identity.application.exceptions import (
     EmployeeAlreadyInvitedError,
 )
 from identity.application.messages.invitation_email_requested import (
-    InvitationEmailRequested,
+    InvitationEmailRequestedMessage,
 )
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
@@ -77,7 +77,7 @@ class InviteEmployeeHandler:
             employee = EmployeeAccount.invite(
                 employee_id=employee_id, email=employee_email, roles=requested_roles
             )
-            
+
             invitation = Invitation.issue(
                 invitation_id=invitation_id,
                 invited_by=inviter.id,
@@ -87,8 +87,8 @@ class InviteEmployeeHandler:
                 created_at=now,
                 expires_at=issued_invitation_token.expires_at,
             )
-            
-            outbox_message = InvitationEmailRequested(
+
+            outbox_message = InvitationEmailRequestedMessage(
                 invitation_id=invitation_id.value,
                 recipient_email=employee_email.value,
             )

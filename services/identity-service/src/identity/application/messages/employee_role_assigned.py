@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import ClassVar
 from uuid import UUID
 
 from identity.application.messages.base import OutboxMessage
@@ -6,7 +7,9 @@ from identity.domain.enums.role import EmployeeRole
 
 
 @dataclass(frozen=True, slots=True, kw_only=True)
-class EmployeeRoleAssigned(OutboxMessage):
+class EmployeeRoleAssignedMessage(OutboxMessage):
+    message_type: ClassVar[str] = "EmployeeRoleAssigned"
+
     employee_id: UUID
     actor_id: UUID
     role: EmployeeRole

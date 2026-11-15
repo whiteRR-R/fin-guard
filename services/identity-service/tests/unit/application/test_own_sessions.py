@@ -22,7 +22,7 @@ from identity.application.exceptions import (
     SessionIsNotActiveError,
     SessionNotFoundError,
 )
-from identity.application.messages.session_revoked import SessionRevoked
+from identity.application.messages.session_revoked import SessionRevokedMessage
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
 )
@@ -67,7 +67,9 @@ def test_list_returns_only_own_sessions_with_current_first(
     assert result.sessions[0].expires_at == context.current_session.expires_at
     assert "refresh-token-hash" not in repr(result)
     assert not hasattr(result.sessions[0], "refresh_token_hash")
-    context.sessions.list_active_by_employee.assert_awaited_once_with(context.employee.id)
+    context.sessions.list_active_by_employee.assert_awaited_once_with(
+        context.employee.id
+    )
     context.sessions.get_by_id_with_lock.assert_not_awaited()
     context.sessions.save.assert_not_awaited()
     context.outbox.add.assert_not_awaited()
@@ -120,10 +122,12 @@ def test_revoke_removes_selected_session_from_list_and_records_audit(
         context.current_session.id.value,
         context.other_session.id.value,
     ]
-    context.sessions.get_by_id_with_lock.assert_awaited_once_with(context.target_session.id)
+    context.sessions.get_by_id_with_lock.assert_awaited_once_with(
+        context.target_session.id
+    )
     assert context.revoke_uow.commit_count == 1
-    message, = context.store.state.messages
-    assert isinstance(message, SessionRevoked)
+    (message,) = context.store.state.messages
+    assert isinstance(message, SessionRevokedMessage)
     assert message.session_id == context.target_session.id.value
     assert message.employee_id == context.employee.id.value
     assert message.created_at == NOW
@@ -237,7 +241,9 @@ def test_authenticated_actor_can_list_and_revoke_selected_session(
                 current_session_id=actor.session_id.value,
             )
         )
-        selected = next(session for session in result.sessions if not session.is_current)
+        selected = next(
+            session for session in result.sessions if not session.is_current
+        )
         await context.revoke_handler.execute(
             RevokeOwnSessionCommand(
                 employee_id=actor.employee_id.value,
@@ -267,8 +273,8 @@ def test_concurrent_refresh_cannot_reactivate_selected_session(
             expires_at=NOW + timedelta(hours=1),
         )
         initial_hash = context.target_session.refresh_token_hash
-        refresh.verifier.matches_hash.side_effect = (
-            lambda token, token_hash: token == OLD_TOKEN and token_hash == initial_hash
+        refresh.verifier.matches_hash.side_effect = lambda token, token_hash: (
+            token == OLD_TOKEN and token_hash == initial_hash
         )
         revoke_request = context.revoke_handler.execute(context.command)
         refresh_request = refresh.handler.execute(RefreshAccessTokenCommand(OLD_TOKEN))

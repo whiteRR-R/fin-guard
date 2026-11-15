@@ -20,7 +20,9 @@ from identity.domain.value_objects.refresh_session import (
 @dataclass
 class SessionState:
     sessions: dict[RefreshSessionId, RefreshSession] = field(default_factory=dict)
-    history: dict[RefreshSessionId, list[RefreshTokenHash]] = field(default_factory=dict)
+    history: dict[RefreshSessionId, list[RefreshTokenHash]] = field(
+        default_factory=dict
+    )
     messages: list[OutboxMessage] = field(default_factory=list)
 
 
@@ -121,6 +123,8 @@ def make_session_repository(
         list_active_by_employee_with_lock
     )
     repository.save.side_effect = save
-    repository.list_used_refresh_token_hashes.side_effect = list_used_refresh_token_hashes
+    repository.list_used_refresh_token_hashes.side_effect = (
+        list_used_refresh_token_hashes
+    )
     repository.add_used_refresh_token_hash.side_effect = add_used_refresh_token_hash
     return repository

@@ -3,7 +3,7 @@ from identity.application.exceptions import (
     AccessDeniedError,
     SessionNotFoundError,
 )
-from identity.application.messages.session_logged_out import SessionLoggedOut
+from identity.application.messages.session_logged_out import SessionLoggedOutMessage
 from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.outbox_repository import OutboxRepository
 from identity.application.ports.repositories.refresh_session_repository import (
@@ -46,7 +46,7 @@ class LogoutHandler:
                 return
 
             now = self._clock.now()
-            outbox_message = SessionLoggedOut(
+            outbox_message = SessionLoggedOutMessage(
                 session_id=session.id.value,
                 employee_id=session.employee_id.value,
                 created_at=now,

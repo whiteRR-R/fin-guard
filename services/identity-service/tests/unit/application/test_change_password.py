@@ -10,11 +10,15 @@ from identity.application.commands.change_password.handler import (
     ChangePasswordHandler,
 )
 from identity.application.exceptions import EmployeeNotActiveError, InvalidPasswordError
+from identity.application.messages.employee_password_changed import (
+    EmployeePasswordChangedMessage,
+)
 from identity.domain.enums.status import EmployeeStatus
 from identity.domain.value_objects.password import HashedPassword, Password
 from tests.unit.application.doubles import (
     EmployeeRepositoryFake,
     FixedClock,
+    OutboxRepositoryFake,
     PasswordHasherStub,
     RefreshSessionRepositoryFake,
     UnitOfWorkFake,
@@ -41,8 +45,10 @@ def test_change_password_revokes_sessions_and_commits_once() -> None:
         hash_result=NEW_PASSWORD_HASH,
     )
     uow = UnitOfWorkFake()
+    outbox = OutboxRepositoryFake()
     handler = ChangePasswordHandler(
         uow=uow,
+        outbox=outbox,
         employees=employees,
         refresh_sessions=refresh_sessions,
         clock=FixedClock(NOW),
@@ -64,6 +70,14 @@ def test_change_password_revokes_sessions_and_commits_once() -> None:
     assert refresh_sessions.saved == [session]
     assert not session.is_active(NOW)
     assert password_hasher.hash_calls == [Password(NEW_PASSWORD)]
+    assert outbox.added == [
+        EmployeePasswordChangedMessage(
+            message_id=outbox.added[0].message_id,
+            employee_id=employee.id.value,
+            revoked_session_ids=(session.id.value,),
+            created_at=NOW,
+        )
+    ]
     assert uow.commit_count == 1
     assert uow.rollback_count == 0
 
@@ -77,8 +91,10 @@ def test_new_password_must_differ_from_current_password() -> None:
         verify_results=(True, True),
     )
     uow = UnitOfWorkFake()
+    outbox = OutboxRepositoryFake()
     handler = ChangePasswordHandler(
         uow=uow,
+        outbox=outbox,
         employees=employees,
         refresh_sessions=refresh_sessions,
         clock=FixedClock(NOW),
@@ -99,6 +115,7 @@ def test_new_password_must_differ_from_current_password() -> None:
     assert password_hasher.hash_calls == []
     assert employees.saved == []
     assert refresh_sessions.saved == []
+    assert outbox.added == []
     assert uow.commit_count == 0
     assert uow.rollback_count == 1
 
@@ -112,8 +129,10 @@ def test_blocked_employee_cannot_change_password() -> None:
     refresh_sessions = RefreshSessionRepositoryFake(active_at=NOW)
     password_hasher = PasswordHasherStub(password_is_valid=True)
     uow = UnitOfWorkFake()
+    outbox = OutboxRepositoryFake()
     handler = ChangePasswordHandler(
         uow=uow,
+        outbox=outbox,
         employees=employees,
         refresh_sessions=refresh_sessions,
         clock=FixedClock(NOW),
@@ -134,5 +153,6 @@ def test_blocked_employee_cannot_change_password() -> None:
     assert password_hasher.verify_calls == []
     assert employees.saved == []
     assert refresh_sessions.saved == []
+    assert outbox.added == []
     assert uow.commit_count == 0
     assert uow.rollback_count == 1

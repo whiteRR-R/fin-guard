@@ -14,8 +14,12 @@ from identity.application.exceptions import (
     EmployeeNotFoundError,
     LastActiveAdminError,
 )
-from identity.application.messages.employee_role_assigned import EmployeeRoleAssigned
-from identity.application.messages.employee_role_revoked import EmployeeRoleRevoked
+from identity.application.messages.employee_role_assigned import (
+    EmployeeRoleAssignedMessage,
+)
+from identity.application.messages.employee_role_revoked import (
+    EmployeeRoleRevokedMessage,
+)
 from identity.domain.aggregates.employee_account import EmployeeAccount
 from identity.domain.enums.role import EmployeeRole
 from identity.domain.enums.status import EmployeeStatus
@@ -116,9 +120,11 @@ def test_assign_role_updates_employee_and_records_audit(
     assert events[0].role is EmployeeRole.AUDITOR
     assert len(store.state.messages) == 1
     message = store.state.messages[0]
-    assert isinstance(message, EmployeeRoleAssigned)
+    assert isinstance(message, EmployeeRoleAssignedMessage)
     assert (message.actor_id, message.employee_id, message.role) == (
-        admin.id.value, employee.id.value, EmployeeRole.AUDITOR
+        admin.id.value,
+        employee.id.value,
+        EmployeeRole.AUDITOR,
     )
     assert message.created_at == NOW
     assert message.version == 1
@@ -149,9 +155,11 @@ def test_revoke_role_updates_employee_and_records_audit(
     assert events[0].role is EmployeeRole.AUDITOR
     assert len(store.state.messages) == 1
     message = store.state.messages[0]
-    assert isinstance(message, EmployeeRoleRevoked)
+    assert isinstance(message, EmployeeRoleRevokedMessage)
     assert (message.actor_id, message.employee_id, message.role) == (
-        admin.id.value, employee.id.value, EmployeeRole.AUDITOR
+        admin.id.value,
+        employee.id.value,
+        EmployeeRole.AUDITOR,
     )
     assert message.created_at == NOW
     assert message.version == 1
@@ -160,9 +168,7 @@ def test_revoke_role_updates_employee_and_records_audit(
 
 
 @pytest.mark.parametrize("action", ["assign", "revoke"])
-def test_missing_actor_is_rejected(
-    action: str, employee: EmployeeAccount
-) -> None:
+def test_missing_actor_is_rejected(action: str, employee: EmployeeAccount) -> None:
     store = make_store(employee)
     context = make_context(store)
     actor_id = EmployeeId.new()
@@ -361,9 +367,7 @@ def test_failure_rolls_back_role_and_audit(
     if failure == "outbox":
         context.outbox.add.side_effect = RuntimeError("Outbox failed")
     role = (
-        EmployeeRole.COMPLIANCE_OFFICER
-        if action == "assign"
-        else EmployeeRole.AUDITOR
+        EmployeeRole.COMPLIANCE_OFFICER if action == "assign" else EmployeeRole.AUDITOR
     )
 
     with pytest.raises(RuntimeError):

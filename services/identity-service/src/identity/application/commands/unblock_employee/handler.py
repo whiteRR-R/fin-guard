@@ -7,9 +7,12 @@ from identity.application.exceptions import (
     AuthenticationError,
     EmployeeNotFoundError,
 )
+from identity.application.messages.employee_unblocked import EmployeeUnblockedMessage
+from identity.application.ports.clock import Clock
 from identity.application.ports.repositories.employee_repository import (
     EmployeeRepository,
 )
+from identity.application.ports.repositories.outbox_repository import OutboxRepository
 from identity.application.ports.unit_of_work import UnitOfWork
 from identity.domain.exceptions import EmployeeUnblockNotAllowedError
 from identity.domain.policies.employee_unblock import EmployeeUnblockPolicy
@@ -20,10 +23,14 @@ class UnblockEmployeeHandler:
     def __init__(
         self,
         uow: UnitOfWork,
+        clock: Clock,
+        outbox: OutboxRepository,
         employees: EmployeeRepository,
         unblock_policy: EmployeeUnblockPolicy,
     ) -> None:
         self._uow = uow
+        self._clock = clock
+        self._outbox = outbox
         self._employees = employees
         self._unblock_policy = unblock_policy
 
@@ -53,6 +60,13 @@ class UnblockEmployeeHandler:
             target.unblock()
 
             await self._employees.save(target)
+            await self._outbox.add(
+                EmployeeUnblockedMessage(
+                    employee_id=target.id.value,
+                    actor_id=actor.id.value,
+                    created_at=self._clock.now(),
+                )
+            )
             await self._uow.commit()
 
         return UnblockEmployeeResult(

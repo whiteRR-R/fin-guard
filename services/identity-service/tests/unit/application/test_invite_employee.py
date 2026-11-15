@@ -10,7 +10,7 @@ from identity.application.exceptions import (
     EmployeeAlreadyInvitedError,
 )
 from identity.application.messages.invitation_email_requested import (
-    InvitationEmailRequested,
+    InvitationEmailRequestedMessage,
 )
 from identity.application.ports.security.invitation_token_issuer import (
     IssuedInvitationToken,
@@ -103,7 +103,7 @@ def test_invite_employee_saves_aggregates_and_outbox_in_one_unit_of_work() -> No
     assert token_issuer.calls == [(invitation.id, NOW)]
     assert len(outbox.added) == 1
     message = outbox.added[0]
-    assert isinstance(message, InvitationEmailRequested)
+    assert isinstance(message, InvitationEmailRequestedMessage)
     assert message.invitation_id == invitation.id.value
     assert message.recipient_email == employee.email.value
     assert not hasattr(message, "invitation_token")

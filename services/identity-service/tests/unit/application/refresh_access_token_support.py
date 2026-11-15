@@ -127,8 +127,8 @@ def make_context(
         session_id=session.id,
         expires_at=NOW + timedelta(days=1),
     )
-    verifier.matches_hash.side_effect = (
-        lambda token, hashed: token_hashes.get(token) == hashed
+    verifier.matches_hash.side_effect = lambda token, hashed: (
+        token_hashes.get(token) == hashed
     )
 
     access_issuer = Mock(spec=AccessTokenIssuer)
