@@ -40,6 +40,7 @@ def test_smtp_sender_sends_link_with_invitation_token(
         lambda *args, **kwargs: smtp,
     )
     settings = MailSettings(
+        _env_file=None,  # pyright: ignore[reportCallIssue]
         smtp_host="smtp.example.com",
         smtp_from_email="identity@example.com",
         invitation_accept_url=AnyHttpUrl(
@@ -65,6 +66,7 @@ def test_smtp_sender_sends_link_with_invitation_token(
 def test_mail_settings_require_both_smtp_credentials() -> None:
     with pytest.raises(ValidationError):
         MailSettings(
+            _env_file=None,  # pyright: ignore[reportCallIssue]
             smtp_host="smtp.example.com",
             smtp_username="identity",
             smtp_from_email="identity@example.com",
@@ -75,6 +77,7 @@ def test_mail_settings_require_both_smtp_credentials() -> None:
 def test_mail_settings_require_https_for_remote_invitation_urls() -> None:
     with pytest.raises(ValidationError):
         MailSettings(
+            _env_file=None,  # pyright: ignore[reportCallIssue]
             smtp_host="smtp.example.com",
             smtp_from_email="identity@example.com",
             invitation_accept_url=AnyHttpUrl("http://app.example.com/accept"),
