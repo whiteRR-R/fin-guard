@@ -33,8 +33,10 @@ on shutdown.
 Set `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_FROM_EMAIL`, and
 `INVITATION_ACCEPT_URL` in `.env`. Set both `SMTP_USERNAME` and `SMTP_PASSWORD`
 when the mail server requires authentication; omit both otherwise. The URL is
-the frontend page where an employee accepts an invitation. The worker appends
-the invitation token as the `token` query parameter.
+the page where an employee accepts an invitation. The worker appends the
+invitation token as the `token` query parameter. Until there is a frontend, the
+service serves a minimal page itself: set
+`INVITATION_ACCEPT_URL=http://localhost:8000/invitations/accept`.
 
 Run the worker as a separate process after applying migrations:
 

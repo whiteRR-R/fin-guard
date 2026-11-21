@@ -38,6 +38,9 @@ from identity.presentation.api.rate_limit import (
     install_rate_limit_handler,
 )
 from identity.presentation.api.v1.router import router as v1_router
+from identity.presentation.web.invitation_page import (
+    router as invitation_page_router,
+)
 
 
 def create_app(
@@ -84,4 +87,5 @@ def create_app(
     )
     app.include_router(health_router)
     app.include_router(v1_router)
+    app.include_router(invitation_page_router)
     return app
