@@ -1,8 +1,8 @@
 name: identity-service
 
 x-identity-service: &identity-service
-  build: .
   image: finguard/identity-service:local
+  pull_policy: never
   env_file: .env
   environment:
     DATABASE_URL: postgresql+asyncpg://${DATABASE_USER}:${DATABASE_PASSWORD}@identity-database:5432/${DATABASE_NAME}
@@ -26,6 +26,8 @@ services:
 
   identity-migrate:
     <<: *identity-service
+    build: .
+    pull_policy: build
     command: ["alembic", "upgrade", "head"]
     restart: "no"
     healthcheck:
